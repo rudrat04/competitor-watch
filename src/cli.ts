@@ -10,6 +10,8 @@ import {
 } from './config.js';
 import { checkPages, needsBrowser } from './check.js';
 import { createFetcher } from './fetch/fetcher.js';
+import { runPipeline, formatReport } from './run.js';
+import { FilesystemStorage } from './storage/filesystem.js';
 import { BIN_NAME, EXIT, VERSION } from './constants.js';
 
 const CONFIG_PATH = 'competitors.yaml';
@@ -81,9 +83,30 @@ program
   .option('--data-dir <path>', 'data directory', './data')
   .option('--no-notify', 'disable all notifications')
   .option('--verbose', 'verbose logging')
-  .action(async () => {
-    if (!(await loadOrExit())) return;
-    notImplemented('run');
+  .action(async (opts: { dryRun?: boolean; only?: string; dataDir: string; maxCost?: number }) => {
+    const config = await loadOrExit();
+    if (!config) return;
+    if (opts.maxCost !== undefined) {
+      if (!(opts.maxCost > 0)) {
+        console.error('--max-cost must be a positive number');
+        process.exit(EXIT.CONFIG);
+      }
+      config.settings.max_cost_usd = opts.maxCost;
+    }
+    try {
+      const result = await runPipeline(
+        config,
+        { fetcher: createFetcher(), storage: new FilesystemStorage(opts.dataDir) },
+        { dryRun: opts.dryRun, only: opts.only },
+      );
+      console.log(formatReport(result));
+    } catch (err) {
+      if (err instanceof ConfigError) {
+        console.error(err.message);
+        process.exit(EXIT.CONFIG);
+      }
+      throw err;
+    }
   });
 
 program
