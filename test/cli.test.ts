@@ -1,5 +1,12 @@
 import { execFileSync, spawnSync } from 'node:child_process';
-import { copyFileSync, mkdtempSync, readdirSync, writeFileSync } from 'node:fs';
+import {
+  copyFileSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -118,5 +125,69 @@ describe('cli visibility guard', () => {
     const r = spawnSync('node', [cli, 'run'], { cwd: dir, encoding: 'utf8', env });
     expect(r.status).toBe(0);
     expect(r.stdout).toContain('Not configured yet');
+  });
+});
+
+describe('cli init', () => {
+  it('creates competitors.yaml and .env, prints next steps, never overwrites', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cw-'));
+    const r = run(dir, 'init');
+    expect(r.status).toBe(0);
+    expect(r.stdout).toContain('Created competitors.yaml');
+    expect(r.stdout).toContain('Created .env');
+    expect(r.stdout).toContain('Next steps');
+    expect(readFileSync(join(dir, 'competitors.yaml'), 'utf8')).toBe(
+      readFileSync(join(root, 'competitors.example.yaml'), 'utf8'),
+    );
+    expect(readFileSync(join(dir, '.env'), 'utf8')).toBe(
+      readFileSync(join(root, '.env.example'), 'utf8'),
+    );
+    expect(statSync(join(dir, '.env')).mode & 0o077).toBe(0); // secrets file not world-readable
+
+    writeFileSync(join(dir, 'competitors.yaml'), 'mine');
+    const again = run(dir, 'init');
+    expect(again.stdout).toContain('Kept existing competitors.yaml');
+    expect(readFileSync(join(dir, 'competitors.yaml'), 'utf8')).toBe('mine');
+    // ...and the fresh config is the placeholder, so run does nothing yet.
+    const fresh = mkdtempSync(join(tmpdir(), 'cw-'));
+    run(fresh, 'init');
+    expect(run(fresh, 'run').stdout).toContain('Not configured yet');
+  });
+});
+
+describe('npm package contents', () => {
+  it('ships only dist/, prompts/, README.md, LICENSE and package.json', () => {
+    const out = execFileSync('npm', ['pack', '--dry-run', '--json', '--ignore-scripts'], {
+      cwd: root,
+      encoding: 'utf8',
+    });
+    const files = (JSON.parse(out) as { files: { path: string }[] }[])[0]!.files.map((f) => f.path);
+    for (const f of files) {
+      expect(
+        f === 'package.json' ||
+          f === 'README.md' ||
+          f === 'LICENSE' ||
+          f.startsWith('dist/') ||
+          f.startsWith('prompts/'),
+        f,
+      ).toBe(true);
+    }
+    expect(files).toContain('dist/cli.js');
+    for (const p of ['triage', 'analyze', 'battlecard-create', 'battlecard-update']) {
+      expect(files).toContain(`prompts/${p}.md`);
+    }
+    expect(
+      files.some((f) => f.startsWith('test/') || f.startsWith('src/') || f.startsWith('template/')),
+    ).toBe(false);
+  });
+
+  it('bin points at a file with a node shebang', () => {
+    const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as {
+      bin: Record<string, string>;
+    };
+    expect(pkg.bin['competitor-watch']).toBe('dist/cli.js');
+    expect(readFileSync(join(root, 'dist/cli.js'), 'utf8').startsWith('#!/usr/bin/env node')).toBe(
+      true,
+    );
   });
 });

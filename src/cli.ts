@@ -24,6 +24,7 @@ import { shortSummary } from './outputs/digest.js';
 import { notifyAll } from './outputs/notify/index.js';
 import { battlecardPath, rebuildBattlecard } from './outputs/battlecards.js';
 import { slugify } from './config.js';
+import { initProject, NEXT_STEPS } from './init.js';
 import { checkPages, needsBrowser } from './check.js';
 import { createFetcher } from './fetch/fetcher.js';
 import { runPipeline, formatReport } from './run.js';
@@ -31,12 +32,6 @@ import { FilesystemStorage } from './storage/filesystem.js';
 import { BIN_NAME, EXIT, VERSION } from './constants.js';
 
 const CONFIG_PATH = 'competitors.yaml';
-
-/** Exit code for commands whose implementation lands in a later milestone. */
-function notImplemented(name: string): never {
-  console.error(`"${name}" is not implemented yet.`);
-  process.exit(EXIT.UNEXPECTED);
-}
 
 /**
  * Load config, or exit. Returns null (after printing) when the config is still the
@@ -91,7 +86,12 @@ program
 program
   .command('init')
   .description('create competitors.yaml and .env in the current folder')
-  .action(() => notImplemented('init'));
+  .action(() => {
+    const r = initProject(process.cwd());
+    for (const f of r.created) console.log(`Created ${f}`);
+    for (const f of r.skipped) console.log(`Kept existing ${f} (not overwritten)`);
+    console.log(`\n${NEXT_STEPS}`);
+  });
 
 program
   .command('check')

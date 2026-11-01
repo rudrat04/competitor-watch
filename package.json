@@ -2,6 +2,21 @@
   "name": "@rudrat04/competitor-watch",
   "version": "0.1.0",
   "description": "Self-hosted agent that watches competitor web pages, explains what changed, and keeps battlecards current.",
+  "keywords": [
+    "competitive-intelligence",
+    "competitor-monitoring",
+    "battlecard",
+    "change-detection",
+    "github-actions",
+    "anthropic",
+    "claude",
+    "self-hosted"
+  ],
+  "homepage": "https://github.com/rudrat04/competitor-watch#readme",
+  "bugs": {
+    "url": "https://github.com/rudrat04/competitor-watch/issues"
+  },
+  "author": "Rudra Trivedi",
   "type": "module",
   "license": "MIT",
   "bin": {
