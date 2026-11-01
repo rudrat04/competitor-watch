@@ -56,6 +56,8 @@ describe('runPipeline', () => {
     const r = await e.go({ [P]: before, [H]: home });
     expect(r.outcomes.map((o) => o.status)).toEqual(['baseline', 'baseline']);
     expect(e.files()).toEqual([
+      'digests',
+      'digests/2026-11-02.md',
       'snapshots',
       'snapshots/other-co',
       'snapshots/other-co/homepage.md',

@@ -31,3 +31,23 @@ export function toJsonSchema(schema: z.ZodType): Record<string, unknown> {
   delete out.$schema;
   return out;
 }
+
+/** Battlecard creation: the five sections the model writes ("Recent changes" is code-built). */
+export const battlecardCreateSchema = z.object({
+  overview: z.string().min(1),
+  pricing: z.string().min(1),
+  positioning: z.string().min(1),
+  strengths: z.string().min(1),
+  handling: z.string().min(1),
+});
+export type BattlecardCreate = z.infer<typeof battlecardCreateSchema>;
+
+/** Battlecard update: new text for affected sections only; null = leave untouched. */
+export const battlecardUpdateSchema = z.object({
+  overview: z.string().min(1).nullable(),
+  pricing: z.string().min(1).nullable(),
+  positioning: z.string().min(1).nullable(),
+  strengths: z.string().min(1).nullable(),
+  handling: z.string().min(1).nullable(),
+});
+export type BattlecardUpdate = z.infer<typeof battlecardUpdateSchema>;

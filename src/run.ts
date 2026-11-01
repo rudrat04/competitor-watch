@@ -4,6 +4,10 @@ import { describeHit, findKeywordHits, mergeKeywords, type KeywordHit } from './
 import { isTrivial } from './diff/threshold.js';
 import { formatCost, type CostSummary, type CostTracker } from './cost.js';
 import type { Analysis } from './llm/schemas.js';
+import { localLinks, type LinkBuilder } from './github/context.js';
+import type { Llm } from './llm/client.js';
+import { runBattlecardStage, type BattlecardResult } from './outputs/battlecards.js';
+import { buildDigest, nextDigestPath } from './outputs/digest.js';
 import type { Fetcher } from './fetch/fetcher.js';
 import { processPage } from './snapshot/process.js';
 import {
@@ -15,7 +19,7 @@ import {
   type PageStatus,
   type State,
 } from './snapshot/state.js';
-import { readOnlyStorage } from './storage/readonly.js';
+import { dryRunStorage } from './storage/readonly.js';
 import type { Storage } from './storage/storage.js';
 
 export type Significance = 'noise' | 'minor' | 'material';
@@ -60,6 +64,9 @@ export interface RunDeps {
   render?: (url: string) => Promise<{ html: string; finalUrl: string }>;
   classify?: Classify;
   cost?: CostTracker;
+  /** Needed for battlecards; without it that stage is skipped. */
+  llm?: Llm;
+  links?: LinkBuilder;
   now?: () => Date;
 }
 
@@ -73,6 +80,7 @@ export interface PageOutcome {
   competitor: string;
   slug: string;
   pageId: string;
+  pageType: string;
   url: string;
   /** `deferred` = changed but not classified; snapshot and hash left as they were. */
   status: PageStatus | 'deferred';
@@ -89,6 +97,10 @@ export interface RunResult {
   state: State;
   dryRun: boolean;
   cost?: CostSummary;
+  battlecards: BattlecardResult[];
+  /** The digest Markdown, and where it is (or, in a dry run, would be) written. */
+  digest: string;
+  digestPath: string;
 }
 
 export async function runPipeline(
@@ -98,7 +110,7 @@ export async function runPipeline(
 ): Promise<RunResult> {
   const dryRun = opts.dryRun ?? false;
   const now = deps.now ?? (() => new Date());
-  const storage = dryRun ? readOnlyStorage(deps.storage) : deps.storage;
+  const storage = dryRun ? dryRunStorage(deps.storage) : deps.storage;
   const state = await loadState(deps.storage);
 
   const slugs = config.competitors.map((c) => slugify(c.name));
@@ -117,7 +129,14 @@ export async function runPipeline(
     for (const [i, page] of competitor.pages.entries()) {
       const pageId = ids[i] ?? page.type;
       const key = pageKey(slug, pageId);
-      const base = { competitor: competitor.name, slug, pageId, url: page.url, keywordHits: [] };
+      const base = {
+        competitor: competitor.name,
+        slug,
+        pageId,
+        pageType: page.type,
+        url: page.url,
+        keywordHits: [],
+      };
       const stamp = now().toISOString();
 
       const result = await processPage(
@@ -224,11 +243,37 @@ export async function runPipeline(
     }
   }
 
+  const when = now();
+  const battlecards = deps.llm
+    ? await runBattlecardStage({
+        config,
+        storage,
+        llm: deps.llm,
+        outcomes,
+        now: when,
+        only: opts.only,
+      })
+    : [];
+
+  const date = when.toISOString().slice(0, 10);
+  const cost = deps.cost?.summary();
+  const digest = buildDigest({
+    date,
+    outcomes,
+    battlecards,
+    config,
+    state,
+    links: deps.links ?? localLinks,
+    cost,
+  });
+  const digestPath = await nextDigestPath(storage, date);
+  await storage.write(digestPath, digest);
+
   if (!dryRun) {
-    state.last_run = now().toISOString();
+    state.last_run = when.toISOString();
     await saveState(deps.storage, state);
   }
-  return { outcomes, state, dryRun, cost: deps.cost?.summary() };
+  return { outcomes, state, dryRun, cost, battlecards, digest, digestPath };
 }
 
 /** Plain-text report for the terminal. The real digest arrives in M5. */

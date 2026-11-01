@@ -9,9 +9,12 @@ import {
   type Config,
 } from './config.js';
 import Anthropic from '@anthropic-ai/sdk';
-import { CostTracker, resolveModelsAndPrices } from './cost.js';
+import { CostTracker, formatCost, resolveModelsAndPrices } from './cost.js';
 import { createLlm } from './llm/client.js';
 import { createClassifier } from './llm/classify.js';
+import { createLinks, detectGithub, repoRelativeDataDir } from './github/context.js';
+import { battlecardPath, rebuildBattlecard } from './outputs/battlecards.js';
+import { slugify } from './config.js';
 import { checkPages, needsBrowser } from './check.js';
 import { createFetcher } from './fetch/fetcher.js';
 import { runPipeline, formatReport } from './run.js';
@@ -87,49 +90,96 @@ program
   .option('--data-dir <path>', 'data directory', './data')
   .option('--no-notify', 'disable all notifications')
   .option('--verbose', 'verbose logging')
-  .action(async (opts: { dryRun?: boolean; only?: string; dataDir: string; maxCost?: number }) => {
-    const config = await loadOrExit();
-    if (!config) return;
-    if (opts.maxCost !== undefined) {
-      if (!(opts.maxCost > 0)) {
-        console.error('--max-cost must be a positive number');
+  .action(
+    async (opts: {
+      dryRun?: boolean;
+      only?: string;
+      dataDir: string;
+      maxCost?: number;
+      verbose?: boolean;
+    }) => {
+      const config = await loadOrExit();
+      if (!config) return;
+      if (opts.maxCost !== undefined) {
+        if (!(opts.maxCost > 0)) {
+          console.error('--max-cost must be a positive number');
+          process.exit(EXIT.CONFIG);
+        }
+        config.settings.max_cost_usd = opts.maxCost;
+      }
+      if (!process.env.ANTHROPIC_API_KEY) {
+        console.error(
+          'ANTHROPIC_API_KEY is not set. Add it to .env (local) or to your repo secrets (GitHub Actions).',
+        );
         process.exit(EXIT.CONFIG);
       }
-      config.settings.max_cost_usd = opts.maxCost;
+      try {
+        const { models, prices } = resolveModelsAndPrices(config);
+        const cost = new CostTracker(config.settings.max_cost_usd, prices);
+        const llm = createLlm({ api: new Anthropic().messages, tracker: cost, models });
+        const storage = new FilesystemStorage(opts.dataDir);
+        const classify = createClassifier({
+          llm,
+          company: config.company,
+          getBattlecard: async (slug) => storage.read(battlecardPath(slug)),
+        });
+        const links = createLinks(detectGithub(), repoRelativeDataDir(opts.dataDir));
+        const result = await runPipeline(
+          config,
+          { fetcher: createFetcher(), storage, classify, cost, llm, links },
+          { dryRun: opts.dryRun, only: opts.only },
+        );
+        if (opts.dryRun) console.log('DRY RUN — nothing was written. The digest would be:\n');
+        console.log(result.digest);
+        if (opts.verbose) console.log(`\n--- page report ---\n${formatReport(result)}`);
+        else if (!opts.dryRun)
+          console.log(`Digest written to ${opts.dataDir}/${result.digestPath}`);
+      } catch (err) {
+        if (err instanceof ConfigError) {
+          console.error(err.message);
+          process.exit(EXIT.CONFIG);
+        }
+        throw err;
+      }
+    },
+  );
+
+program
+  .command('battlecard <slug>')
+  .description('show a competitor battlecard, or regenerate it with --rebuild')
+  .option('--rebuild', 'regenerate from current snapshots (keeps the Recent changes log)')
+  .option('--data-dir <path>', 'data directory', './data')
+  .action(async (slug: string, opts: { rebuild?: boolean; dataDir: string }) => {
+    const config = await loadOrExit();
+    if (!config) return;
+    const slugs = config.competitors.map((c) => slugify(c.name));
+    if (!slugs.includes(slug)) {
+      console.error(`No competitor "${slug}". Known: ${slugs.join(', ')}`);
+      process.exit(EXIT.CONFIG);
+    }
+    const storage = new FilesystemStorage(opts.dataDir);
+    if (!opts.rebuild) {
+      const card = await storage.read(battlecardPath(slug));
+      console.log(card ?? `No battlecard for "${slug}" yet. Run "competitor-watch run" first.`);
+      return;
     }
     if (!process.env.ANTHROPIC_API_KEY) {
-      console.error(
-        'ANTHROPIC_API_KEY is not set. Add it to .env (local) or to your repo secrets (GitHub Actions).',
-      );
+      console.error('ANTHROPIC_API_KEY is not set.');
       process.exit(EXIT.CONFIG);
     }
     try {
       const { models, prices } = resolveModelsAndPrices(config);
       const cost = new CostTracker(config.settings.max_cost_usd, prices);
       const llm = createLlm({ api: new Anthropic().messages, tracker: cost, models });
-      const classify = createClassifier({ llm, company: config.company });
-      const result = await runPipeline(
-        config,
-        { fetcher: createFetcher(), storage: new FilesystemStorage(opts.dataDir), classify, cost },
-        { dryRun: opts.dryRun, only: opts.only },
-      );
-      console.log(formatReport(result));
+      await rebuildBattlecard({ config, storage, llm, slug, now: new Date() });
+      console.log(`Rebuilt ${opts.dataDir}/${battlecardPath(slug)}\n${formatCost(cost.summary())}`);
     } catch (err) {
-      if (err instanceof ConfigError) {
+      if (err instanceof ConfigError || (err instanceof Error && /snapshots/.test(err.message))) {
         console.error(err.message);
         process.exit(EXIT.CONFIG);
       }
       throw err;
     }
-  });
-
-program
-  .command('battlecard <slug>')
-  .description('manage a competitor battlecard')
-  .option('--rebuild', 'rebuild from current snapshots')
-  .action(async () => {
-    if (!(await loadOrExit())) return;
-    notImplemented('battlecard');
   });
 
 program
