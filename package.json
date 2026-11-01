@@ -1,6 +1,6 @@
 {
   "name": "@rudrat04/competitor-watch",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Self-hosted agent that watches competitor web pages, explains what changed, and keeps battlecards current.",
   "keywords": [
     "competitive-intelligence",
