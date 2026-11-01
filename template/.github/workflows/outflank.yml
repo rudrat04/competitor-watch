@@ -1,4 +1,4 @@
-name: Competitor Watch
+name: Outflank
 
 on:
   schedule:
@@ -13,18 +13,18 @@ permissions:
   issues: write # open one digest issue per run
 
 concurrency:
-  group: competitor-watch
+  group: outflank
   cancel-in-progress: false
 
 env:
   # "@1" means "latest 1.x": fixes arrive automatically on every run, with no merges.
-  # Pin an exact version (e.g. "@rudrat04/competitor-watch@1.2.3") for fully reproducible runs.
-  CW_PACKAGE: '@rudrat04/competitor-watch@1'
+  # Pin an exact version (e.g. "@rudrat04/outflank@1.2.3") for fully reproducible runs.
+  CW_PACKAGE: '@rudrat04/outflank@1'
 
 jobs:
   watch:
     # Never runs in the public template repo itself, only in repos created from it.
-    if: github.repository != 'rudrat04/competitor-watch-template'
+    if: github.repository != 'rudrat04/outflank-template'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -36,13 +36,13 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install Competitor Watch
+      - name: Install Outflank
         # No package.json here, so nothing is saved; node_modules/ is gitignored.
         run: npm install --no-save "$CW_PACKAGE"
 
       - name: Install a browser (only if a page has render true)
         run: |
-          if [ "$(npx --no-install competitor-watch info --needs-browser)" = "true" ]; then
+          if [ "$(npx --no-install outflank info --needs-browser)" = "true" ]; then
             # Install both in one command: a second "npm install --no-save" would prune the
             # engine installed above (there is no package.json to keep it).
             npm install --no-save "$CW_PACKAGE" playwright
@@ -53,7 +53,7 @@ jobs:
         id: run
         # Exits early with a clear error if ANTHROPIC_API_KEY is missing (once competitors.yaml
         # is filled in; until then it just prints "Not configured yet" and does nothing).
-        run: npx --no-install competitor-watch run
+        run: npx --no-install outflank run
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

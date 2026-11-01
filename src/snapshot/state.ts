@@ -53,7 +53,7 @@ export async function loadState(storage: Storage): Promise<State> {
   const version = (json as { schema_version?: unknown } | null)?.schema_version;
   if (version !== STATE_SCHEMA_VERSION) {
     throw new Error(
-      `${STATE_PATH} has schema_version ${String(version)}, but this version of competitor-watch ` +
+      `${STATE_PATH} has schema_version ${String(version)}, but this version of outflank ` +
         `expects ${STATE_SCHEMA_VERSION}. See the migration notes in the README.`,
     );
   }

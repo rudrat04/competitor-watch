@@ -159,7 +159,7 @@ export async function loadConfig(path: string): Promise<Config> {
     text = await readFile(path, 'utf8');
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
-      throw new ConfigError(`${path} not found. Run "competitor-watch init" to create one.`);
+      throw new ConfigError(`${path} not found. Run "outflank init" to create one.`);
     }
     throw err;
   }

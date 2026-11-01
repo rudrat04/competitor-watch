@@ -151,7 +151,7 @@ export async function rebuildBattlecard(input: {
   if (!competitor) throw new Error(`No competitor with slug "${input.slug}"`);
   const snapshots = await readSnapshots(input.storage, competitor);
   if (snapshots.length === 0) {
-    throw new Error(`No snapshots for "${input.slug}" yet. Run "competitor-watch run" first.`);
+    throw new Error(`No snapshots for "${input.slug}" yet. Run "outflank run" first.`);
   }
   const path = battlecardPath(input.slug);
   const old = await input.storage.read(path);

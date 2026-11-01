@@ -74,7 +74,7 @@ export function buildDigest(input: DigestInput): string {
   const baselines = outcomes.filter((o) => o.status === 'baseline');
   const baselineCompetitors = new Set(baselines.map((o) => o.slug));
 
-  const out: string[] = [`# Competitor Watch — ${input.date}`, ''];
+  const out: string[] = [`# Outflank — ${input.date}`, ''];
 
   out.push(`**${digestHeadline(outcomes)}**`, '');
 

@@ -119,7 +119,7 @@ const result = (outcomes: PageOutcome[], extra: Partial<RunResult> = {}): RunRes
   state: emptyState(),
   dryRun: false,
   battlecards: [],
-  digest: '# Competitor Watch — 2026-11-02\n\nbody\n',
+  digest: '# Outflank — 2026-11-02\n\nbody\n',
   digestPath: 'digests/2026-11-02.md',
   ...extra,
 });
@@ -294,7 +294,7 @@ describe('slack and discord notifiers', () => {
 
   it('slack: short summary with a link to the digest', async () => {
     expect(slackText(s)).toBe(
-      '*Competitor Watch — 2026-11-02*: 1 material change across 1 competitor\n• 🔴 Rival (pricing): Pro rose to $45\n<https://github.com/me/watch/blob/HEAD/data/digests/2026-11-02.md|Read the full digest>',
+      '*Outflank — 2026-11-02*: 1 material change across 1 competitor\n• 🔴 Rival (pricing): Pro rose to $45\n<https://github.com/me/watch/blob/HEAD/data/digests/2026-11-02.md|Read the full digest>',
     );
     const f = mockFetch(() => [200, {}]);
     expect(await sendSlack('https://hooks.slack.com/services/SECRET', s, f.impl)).toEqual({
@@ -317,7 +317,7 @@ describe('slack and discord notifiers', () => {
     };
     const c = discordContent(long);
     expect(c.length).toBeLessThanOrEqual(2000);
-    expect(c.startsWith('**Competitor Watch — 2026-11-02**')).toBe(true);
+    expect(c.startsWith('**Outflank — 2026-11-02**')).toBe(true);
     expect(c).toContain('[Read the full digest]');
     const f = mockFetch(() => [204, null]);
     expect((await sendDiscord('https://discord.com/api/webhooks/SECRET', s, f.impl)).status).toBe(
@@ -416,7 +416,7 @@ describe('notifyAll', () => {
       fetchImpl: f.impl,
     });
     expect(f.calls.find((c) => c.url.endsWith('/issues'))?.body.title).toBe(
-      'Competitor Watch — 2026-11-02: 1 material change across 1 competitor',
+      'Outflank — 2026-11-02: 1 material change across 1 competitor',
     );
   });
 });

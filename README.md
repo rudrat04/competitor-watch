@@ -1,8 +1,8 @@
-# Competitor Watch
+# Outflank
 
 **Create a private repo from the template, add one secret, and get a weekly competitor digest.**
 
-Competitor Watch is an open-source, 100% self-hosted agent that watches your competitors' public web pages (pricing, changelog, homepage, careers…), detects meaningful changes, explains what changed and why it matters to you, and keeps an up-to-date battlecard per competitor.
+Outflank is an open-source, 100% self-hosted agent that watches your competitors' public web pages (pricing, changelog, homepage, careers…), detects meaningful changes, explains what changed and why it matters to you, and keeps an up-to-date battlecard per competitor.
 
 It runs on your own GitHub Actions minutes with your own Anthropic API key. There is no hosted service, no account and no telemetry.
 
@@ -12,16 +12,16 @@ It runs on your own GitHub Actions minutes with your own Anthropic API key. Ther
 
 ### How is this different from changedetection.io?
 
-[changedetection.io](https://changedetection.io) tells you a page changed. Competitor Watch tells you what the change **means for you** and keeps your battlecards current, for free and self-hosted. If you just want general page watching, use changedetection.io; it's great at that.
+[changedetection.io](https://changedetection.io) tells you a page changed. Outflank tells you what the change **means for you** and keeps your battlecards current, for free and self-hosted. If you just want general page watching, use changedetection.io; it's great at that.
 
 ---
 
 ## Quickstart: GitHub, fully hands-off
 
-1. Open [`rudrat04/competitor-watch-template`](https://github.com/rudrat04/competitor-watch-template) and click **Use this template → Create a new repository**. Set it to **Private**. (Don't fork: forks of public repos are public.)
+1. Open [`rudrat04/outflank-template`](https://github.com/rudrat04/outflank-template) and click **Use this template → Create a new repository**. Set it to **Private**. (Don't fork: forks of public repos are public.)
 2. In the new repo: **Settings → Secrets and variables → Actions → New repository secret**. Name it `ANTHROPIC_API_KEY`, with a key from [console.anthropic.com](https://console.anthropic.com). Optionally add `SLACK_WEBHOOK_URL` and/or `DISCORD_WEBHOOK_URL`.
 3. Edit `competitors.yaml` in the browser: your company, then 2–5 competitors with their pricing, changelog and homepage URLs. Commit.
-4. **Actions → Competitor Watch → Run workflow** to run it once now.
+4. **Actions → Outflank → Run workflow** to run it once now.
 5. A few minutes later, a GitHub issue appears with the baseline digest, and `data/battlecards/` holds one battlecard per competitor.
 
 After that it runs every Monday on its own. Each week, if anything meaningful changed, a new issue arrives (GitHub notifies repo owners by default). All history is in the repo: browse `data/digests/`, open any battlecard, or view a snapshot's history to see exactly what changed and when.
@@ -29,9 +29,9 @@ After that it runs every Monday on its own. Each week, if anything meaningful ch
 **Day-to-day**
 
 - Add or remove competitors → edit `competitors.yaml`.
-- Change the schedule → edit the `cron` line in `.github/workflows/competitor-watch.yml`.
+- Change the schedule → edit the `cron` line in `.github/workflows/outflank.yml`.
 - Stop it → disable the workflow in the Actions tab.
-- Updates → nothing to do; each run uses the latest 1.x of the engine. To pin a version, change `CW_PACKAGE` in the workflow to an exact version, e.g. `@rudrat04/competitor-watch@1.0.0`.
+- Updates → nothing to do; each run uses the latest 1.x of the engine. To pin a version, change `CW_PACKAGE` in the workflow to an exact version, e.g. `@rudrat04/outflank@1.0.0`.
 
 ---
 
@@ -43,44 +43,44 @@ Requires Node.js 20 or newer.
 
 ```bash
 mkdir my-competitors && cd my-competitors
-npx @rudrat04/competitor-watch init      # creates competitors.yaml and .env
+npx @rudrat04/outflank init      # creates competitors.yaml and .env
 # add your key to .env, edit competitors.yaml
-npx @rudrat04/competitor-watch check     # confirms every page is reachable
-npx @rudrat04/competitor-watch run --dry-run
-npx @rudrat04/competitor-watch run       # writes ./data
+npx @rudrat04/outflank check     # confirms every page is reachable
+npx @rudrat04/outflank run --dry-run
+npx @rudrat04/outflank run       # writes ./data
 ```
 
-Schedule it with cron (macOS/Linux) or Task Scheduler (Windows). Optionally `git init` the folder to keep history: Competitor Watch never runs git itself, so commit `data/` however you like.
+Schedule it with cron (macOS/Linux) or Task Scheduler (Windows). Optionally `git init` the folder to keep history: Outflank never runs git itself, so commit `data/` however you like.
 
 ### Docker
 
 ```bash
-docker build -t competitor-watch .
-docker run --rm --env-file .env -v "$PWD:/work" competitor-watch run
+docker build -t outflank .
+docker run --rm --env-file .env -v "$PWD:/work" outflank run
 ```
 
-Once a published image exists, use `ghcr.io/rudrat04/competitor-watch` instead of building. The current folder (mounted at `/work`) must contain `competitors.yaml`; `data/` is written there. Add `--user "$(id -u):$(id -g)"` so the files you get are owned by you rather than root. Schedule it with cron on any server you already have.
+Once a published image exists, use `ghcr.io/rudrat04/outflank` instead of building. The current folder (mounted at `/work`) must contain `competitors.yaml`; `data/` is written there. Add `--user "$(id -u):$(id -g)"` so the files you get are owned by you rather than root. Schedule it with cron on any server you already have.
 
 Playwright (for `render: true` pages) is not in the image by default. To include it:
 
 ```bash
-docker build --build-arg INSTALL_PLAYWRIGHT=true -t competitor-watch .
+docker build --build-arg INSTALL_PLAYWRIGHT=true -t outflank .
 ```
 
 ### CLI reference
 
 ```
-competitor-watch init                  # create competitors.yaml + .env here, print next steps
-competitor-watch check                 # validate config and test-fetch every page; no LLM, no writes
-competitor-watch run [--dry-run]       # full pipeline
+outflank init                  # create competitors.yaml + .env here, print next steps
+outflank check                 # validate config and test-fetch every page; no LLM, no writes
+outflank run [--dry-run]       # full pipeline
           [--only <slug>]              # one competitor
           [--max-cost <usd>]           # override settings.max_cost_usd
           [--data-dir <path>]          # default ./data
           [--no-notify]
           [--verbose]                  # also print a per-page report
-competitor-watch battlecard <slug>             # print a battlecard
-competitor-watch battlecard <slug> --rebuild   # regenerate it from current snapshots
-competitor-watch info --needs-browser  # "true" if any page has render: true
+outflank battlecard <slug>             # print a battlecard
+outflank battlecard <slug> --rebuild   # regenerate it from current snapshots
+outflank info --needs-browser  # "true" if any page has render: true
 ```
 
 `--dry-run` writes nothing to the data directory and sends no notifications; it prints the digest instead. It does call the LLM (that's the point of trying it), and the cost cap still applies.
@@ -173,7 +173,7 @@ For each page: check `robots.txt` → fetch (or render) → extract the main con
 - Remaining changes go to a **fast, cheap model** for triage: _noise_, _minor_ or _material_. Only **material** changes go to the **stronger model** for analysis: what changed, why it matters, the impact on you, and a suggested response. The model only ever sees the diff and a little context, never two full pages.
 - **Battlecards** are created from all current snapshots for a new competitor, and updated once per competitor when it has minor or material changes. Updates rewrite only the affected sections; the rest of the file stays byte-for-byte the same, so your own edits outside those sections survive.
 - A **digest** is written to `data/digests/YYYY-MM-DD.md`.
-- **Notifications** are sent when there was at least one minor or material change, a baseline, or the cost cap was hit. In GitHub Actions that's one issue per run, labelled `competitor-watch`. Slack and Discord get a short summary with a link.
+- **Notifications** are sent when there was at least one minor or material change, a baseline, or the cost cap was hit. In GitHub Actions that's one issue per run, labelled `outflank`. Slack and Discord get a short summary with a link.
 
 One failing page never fails the run. A page whose change couldn't be analyzed (cost cap hit, or an LLM error) keeps its old snapshot, so the change is picked up again next run.
 
@@ -206,7 +206,7 @@ The first run costs the most because it creates every battlecard. These figures 
 - **Private by default.** In GitHub Actions, the engine checks the repo's visibility before doing anything. If the repo is public, or the check fails, it writes nothing, sends nothing and exits with code 4. Set `allow_public_repo: true` only if you really want your competitor data public.
 - **Public pages only.** No logins, no cookies, no bypassing bot protection.
 - **`robots.txt` is respected.** Disallowed pages are skipped and listed in the digest. If a site's `robots.txt` can't be fetched (server error), the site is skipped.
-- **It identifies itself** as `CompetitorWatch/<version> (+https://github.com/rudrat04/competitor-watch)`, and the `robots.txt` token is `CompetitorWatch`.
+- **It identifies itself** as `Outflank/<version> (+https://github.com/rudrat04/outflank)`, and the `robots.txt` token is `Outflank`.
 - **Rate-limited:** 1–2 seconds between requests to the same host, a 20-second timeout and 2 retries.
 - **No telemetry, ever.** The only outbound calls are to the pages you configure, the Anthropic API, the GitHub API (inside Actions) and the webhooks you set.
 
@@ -225,10 +225,10 @@ The first run costs the most because it creates every battlecard. These figures 
 - **Push fails in Actions** → the workflow token is read-only (**Settings → Actions → General → Workflow permissions → Read and write**), or `main` is protected and doesn't allow the bot to push.
 - **No digest issue** → issues may be disabled for the repo, or your org forces a read-only token; the run log shows a warning.
 - **`ANTHROPIC_API_KEY is not set`** → add the repository secret (Quickstart step 2) or put it in `.env` locally.
-- **A page always errors** → the site may block bots, or need `render: true`. Run `competitor-watch check` to see each page's status.
+- **A page always errors** → the site may block bots, or need `render: true`. Run `outflank check` to see each page's status.
 - **"include selector matched nothing"** → the site was redesigned; update the page's `include` selectors.
 - **The digest is noisy for one page** → add `ignore` selectors, or raise `min_change_chars`.
-- **A battlecard looks wrong, or the update keeps failing** → `competitor-watch battlecard <slug> --rebuild` regenerates it from current snapshots and keeps the Recent changes log.
+- **A battlecard looks wrong, or the update keeps failing** → `outflank battlecard <slug> --rebuild` regenerates it from current snapshots and keeps the Recent changes log.
 
 ## Roadmap (v1.1)
 

@@ -1,13 +1,13 @@
-> **SAMPLE OUTPUT — not real data.** The digest from a first (baseline) run. The companies (Acme Analytics, Northwind Metrics, Globex Insights) are fictional; this file shows the format Competitor Watch produces.
+> **SAMPLE OUTPUT — not real data.** The digest from a first (baseline) run. The companies (Acme Analytics, Northwind Metrics, Globex Insights) are fictional; this file shows the format Outflank produces.
 
-# Competitor Watch — 2026-11-02
+# Outflank — 2026-11-02
 
 **Baseline created for 2 competitors, 3 pages**
 
 ## New battlecards
 
-- [Northwind Metrics](https://github.com/you/my-competitor-watch/blob/HEAD/data/battlecards/northwind-metrics.md)
-- [Globex Insights](https://github.com/you/my-competitor-watch/blob/HEAD/data/battlecards/globex-insights.md)
+- [Northwind Metrics](https://github.com/you/my-outflank/blob/HEAD/data/battlecards/northwind-metrics.md)
+- [Globex Insights](https://github.com/you/my-outflank/blob/HEAD/data/battlecards/globex-insights.md)
 
 ## Needs attention
 

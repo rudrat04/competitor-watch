@@ -7,7 +7,7 @@ import { PACKAGE_NAME } from '../src/constants.js';
 const read = (p: string) => readFileSync(`template/${p}`, 'utf8');
 
 describe('template/ workflow', () => {
-  const text = read('.github/workflows/competitor-watch.yml');
+  const text = read('.github/workflows/outflank.yml');
   const wf = parse(text) as {
     on: { schedule: { cron: string }[]; workflow_dispatch: unknown };
     permissions: Record<string, string>;
@@ -35,20 +35,20 @@ describe('template/ workflow', () => {
 
   it('has the planned permissions, concurrency and template-repo skip', () => {
     expect(wf.permissions).toEqual({ contents: 'write', issues: 'write' });
-    expect(wf.concurrency).toEqual({ group: 'competitor-watch', 'cancel-in-progress': false });
-    expect(wf.jobs.watch.if).toBe("github.repository != 'rudrat04/competitor-watch-template'");
+    expect(wf.concurrency).toEqual({ group: 'outflank', 'cancel-in-progress': false });
+    expect(wf.jobs.watch.if).toBe("github.repository != 'rudrat04/outflank-template'");
   });
 
   it('installs without saving, adds a browser only when needed, and runs with the secrets', () => {
-    expect(step('Install Competitor Watch').run).toBe('npm install --no-save "$CW_PACKAGE"');
+    expect(step('Install Outflank').run).toBe('npm install --no-save "$CW_PACKAGE"');
     const browser = step('Install a browser').run!;
-    expect(browser).toContain('competitor-watch info --needs-browser');
+    expect(browser).toContain('outflank info --needs-browser');
     expect(browser).toContain('playwright install --with-deps chromium');
     // A separate `npm install --no-save playwright` would prune the engine (verified with npm 10).
     expect(browser).toContain('npm install --no-save "$CW_PACKAGE" playwright');
     expect(browser).not.toMatch(/npm install --no-save playwright/);
     const run = step('Run');
-    expect(run.run).toContain('competitor-watch run');
+    expect(run.run).toContain('outflank run');
     expect(Object.keys(run.env!).sort()).toEqual([
       'ANTHROPIC_API_KEY',
       'DISCORD_WEBHOOK_URL',
@@ -85,6 +85,6 @@ describe('template/ files', () => {
     const md = read('README.md');
     expect(md).toContain('Use this template');
     expect(md).toContain('ANTHROPIC_API_KEY');
-    expect(md).toContain('https://github.com/rudrat04/competitor-watch');
+    expect(md).toContain('https://github.com/rudrat04/outflank');
   });
 });
