@@ -205,3 +205,71 @@ competitors:
     expect(e.read('snapshots/rival/pricing.md')).toContain('$45');
   });
 });
+
+describe('runPipeline with the LLM stage', () => {
+  it('a DeferChange (cost cap) keeps the old hash and snapshot and is reported as deferred', async () => {
+    const { DeferChange } = await import('../src/run.js');
+    const e = env();
+    await e.go({ [P]: before, [H]: home });
+    const hash = JSON.parse(e.read('state.json')).pages['rival/pricing'].hash;
+    const r = await e.go({ [P]: after, [H]: home }, {}, async () => {
+      throw new DeferChange('cost cap reached; will be retried next run');
+    });
+    expect(r.outcomes[0]).toMatchObject({
+      status: 'deferred',
+      detail: expect.stringContaining('cost cap'),
+    });
+    expect(JSON.parse(e.read('state.json')).pages['rival/pricing'].hash).toBe(hash);
+    expect(e.read('snapshots/rival/pricing.md')).not.toContain('$45');
+    const again = await e.go({ [P]: after, [H]: home }, {}, material);
+    expect(again.outcomes[0]?.status).toBe('material'); // picked up next run
+  });
+
+  it('a classifier error fails only that page: error status, old hash and snapshot kept', async () => {
+    const e = env();
+    await e.go({ [P]: before, [H]: home });
+    const hash = JSON.parse(e.read('state.json')).pages['rival/pricing'].hash;
+    const r = await e.go({ [P]: after, [H]: home }, {}, async () => {
+      throw new Error('response failed validation');
+    });
+    expect(r.outcomes.map((o) => o.status)).toEqual(['error', 'unchanged']);
+    const st = JSON.parse(e.read('state.json')).pages['rival/pricing'];
+    expect(st).toMatchObject({
+      hash,
+      last_status: 'error',
+      last_error: 'response failed validation',
+    });
+    expect(e.read('snapshots/rival/pricing.md')).not.toContain('$45');
+  });
+
+  it('analysis and cost appear in the report', async () => {
+    const { CostTracker } = await import('../src/cost.js');
+    const { DEFAULT_PRICES } = await import('../src/llm/defaults.js');
+    const e = env();
+    await e.go({ [P]: before, [H]: home });
+    const cost = new CostTracker(1, DEFAULT_PRICES);
+    cost.record('claude-haiku-5-5', { input_tokens: 1000, output_tokens: 100 });
+    const { fetcher } = testFetcher({ [P]: { body: after }, [H]: { body: home } });
+    const r = await runPipeline(e.cfg, {
+      fetcher,
+      storage: new FilesystemStorage(e.dir),
+      cost,
+      now: NOW,
+      classify: async () => ({
+        significance: 'material',
+        summary: 'Pro up',
+        analysis: {
+          what_changed: 'W',
+          why_it_matters: 'Y',
+          impact_on_us: 'I',
+          suggested_response: 'S',
+          confidence: 'high',
+        },
+      }),
+    });
+    const text = formatReport(r);
+    expect(text).toContain('What changed: W');
+    expect(text).toContain('Suggested response: S (confidence: high)');
+    expect(text).toMatch(/Cost: \$0\.0001 of \$1\.00 cap/);
+  });
+});

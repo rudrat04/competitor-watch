@@ -40,6 +40,10 @@ const competitorSchema = z
   })
   .strict();
 
+const priceSchema = z
+  .object({ input_per_mtok: z.number().nonnegative(), output_per_mtok: z.number().nonnegative() })
+  .strict();
+
 const settingsSchema = z
   .object({
     max_cost_usd: z.number().positive().default(1.0),
@@ -53,6 +57,8 @@ const settingsSchema = z
       })
       .strict()
       .default({ triage: '', analysis: '' }),
+    /** Optional price overrides (USD per 1M tokens), keyed by model id. */
+    prices: z.record(z.string(), priceSchema).default({}),
     notify: z
       .object({
         github_issue: z.boolean().default(true),

@@ -74,3 +74,18 @@ competitors:
     expect(run(dir, 'info', '--needs-browser').stdout.trim()).toBe('true');
   });
 });
+
+describe('cli run without a key', () => {
+  it('exits 1 with a clear message when ANTHROPIC_API_KEY is missing', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cw-'));
+    writeFileSync(
+      join(dir, 'competitors.yaml'),
+      'company: {name: Acme, description: Anvils}\ncompetitors:\n  - name: Rival\n    pages:\n      - {type: pricing, url: "https://rival.io/p"}\n',
+    );
+    const env = { ...process.env };
+    delete env.ANTHROPIC_API_KEY;
+    const r = spawnSync('node', [cli, 'run'], { cwd: dir, encoding: 'utf8', env });
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain('ANTHROPIC_API_KEY');
+  });
+});

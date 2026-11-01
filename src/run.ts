@@ -2,6 +2,8 @@ import { ConfigError, slugify, type Config, type PageConfig } from './config.js'
 import { diffSnapshots, formatHunks, type SnapshotDiff } from './diff/differ.js';
 import { describeHit, findKeywordHits, mergeKeywords, type KeywordHit } from './diff/keywords.js';
 import { isTrivial } from './diff/threshold.js';
+import { formatCost, type CostSummary, type CostTracker } from './cost.js';
+import type { Analysis } from './llm/schemas.js';
 import type { Fetcher } from './fetch/fetcher.js';
 import { processPage } from './snapshot/process.js';
 import {
@@ -25,12 +27,24 @@ export interface ChangeInput {
   page: PageConfig;
   diff: SnapshotDiff;
   keywordHits: KeywordHit[];
+  /** diff hunks as text (what the LLM sees) */
+  diffText: string;
 }
 
 export interface Classification {
   significance: Significance;
   category?: string;
   summary?: string;
+  /** Present for material changes. */
+  analysis?: Analysis;
+}
+
+/** Thrown by a classifier to postpone a change (e.g. cost cap hit): snapshot and hash are kept. */
+export class DeferChange extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'DeferChange';
+  }
 }
 
 /**
@@ -45,6 +59,7 @@ export interface RunDeps {
   storage: Storage;
   render?: (url: string) => Promise<{ html: string; finalUrl: string }>;
   classify?: Classify;
+  cost?: CostTracker;
   now?: () => Date;
 }
 
@@ -73,6 +88,7 @@ export interface RunResult {
   outcomes: PageOutcome[];
   state: State;
   dryRun: boolean;
+  cost?: CostSummary;
 }
 
 export async function runPipeline(
@@ -160,16 +176,34 @@ export async function runPipeline(
         continue;
       }
 
-      const decision = deps.classify
-        ? await deps.classify({
-            competitor: competitor.name,
-            slug,
-            pageId,
-            page,
-            diff,
-            keywordHits,
-          })
-        : null;
+      let decision: Classification | null;
+      try {
+        decision = deps.classify
+          ? await deps.classify({
+              competitor: competitor.name,
+              slug,
+              pageId,
+              page,
+              diff,
+              keywordHits,
+              diffText: common.diffText,
+            })
+          : null;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        if (err instanceof DeferChange) {
+          outcomes.push({ ...common, status: 'deferred', detail: message });
+        } else {
+          // One failing item never fails the run; old snapshot and hash are kept.
+          const entry = state.pages[key];
+          if (entry) {
+            entry.last_status = 'error';
+            entry.last_error = message;
+          }
+          outcomes.push({ ...common, status: 'error', detail: `LLM stage failed: ${message}` });
+        }
+        continue;
+      }
       if (!decision) {
         outcomes.push({
           ...common,
@@ -194,7 +228,7 @@ export async function runPipeline(
     state.last_run = now().toISOString();
     await saveState(deps.storage, state);
   }
-  return { outcomes, state, dryRun };
+  return { outcomes, state, dryRun, cost: deps.cost?.summary() };
 }
 
 /** Plain-text report for the terminal. The real digest arrives in M5. */
@@ -214,6 +248,16 @@ export function formatReport(result: RunResult): string {
     if (o.changedChars !== undefined) lines.push(`    ${o.changedChars} chars changed`);
     for (const h of o.keywordHits) lines.push(`    ${describeHit(h)}`);
     if (o.classification?.summary) lines.push(`    ${o.classification.summary}`);
+    const a = o.classification?.analysis;
+    if (a) {
+      lines.push(
+        `    What changed: ${a.what_changed}`,
+        `    Why it matters: ${a.why_it_matters}`,
+        `    Impact on us: ${a.impact_on_us}`,
+        `    Suggested response: ${a.suggested_response} (confidence: ${a.confidence})`,
+      );
+    }
   }
+  if (result.cost) lines.push('', formatCost(result.cost));
   return lines.join('\n');
 }

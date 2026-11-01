@@ -8,6 +8,10 @@ import {
   notConfiguredReason,
   type Config,
 } from './config.js';
+import Anthropic from '@anthropic-ai/sdk';
+import { CostTracker, resolveModelsAndPrices } from './cost.js';
+import { createLlm } from './llm/client.js';
+import { createClassifier } from './llm/classify.js';
 import { checkPages, needsBrowser } from './check.js';
 import { createFetcher } from './fetch/fetcher.js';
 import { runPipeline, formatReport } from './run.js';
@@ -93,10 +97,20 @@ program
       }
       config.settings.max_cost_usd = opts.maxCost;
     }
+    if (!process.env.ANTHROPIC_API_KEY) {
+      console.error(
+        'ANTHROPIC_API_KEY is not set. Add it to .env (local) or to your repo secrets (GitHub Actions).',
+      );
+      process.exit(EXIT.CONFIG);
+    }
     try {
+      const { models, prices } = resolveModelsAndPrices(config);
+      const cost = new CostTracker(config.settings.max_cost_usd, prices);
+      const llm = createLlm({ api: new Anthropic().messages, tracker: cost, models });
+      const classify = createClassifier({ llm, company: config.company });
       const result = await runPipeline(
         config,
-        { fetcher: createFetcher(), storage: new FilesystemStorage(opts.dataDir) },
+        { fetcher: createFetcher(), storage: new FilesystemStorage(opts.dataDir), classify, cost },
         { dryRun: opts.dryRun, only: opts.only },
       );
       console.log(formatReport(result));
