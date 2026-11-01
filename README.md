@@ -117,6 +117,8 @@ A real run of the real engine against four real competitors, for an imaginary co
 - 🌅 [First-run digest](examples/live-run/digests/2026-11-01.md): baseline for 4 competitors and 8 pages, plus a battlecard for each: [Mindtickle](examples/live-run/battlecards/mindtickle.md) · [Awarathon](examples/live-run/battlecards/awarathon.md) · [Second Nature](examples/live-run/battlecards/second-nature.md) · [Hyperbound](examples/live-run/battlecards/hyperbound.md).
 - 😴 [Second-run digest](examples/live-run/digests/2026-11-01-2.md): every page fetched again and normalized to identical snapshots, so "No meaningful changes" and zero LLM calls.
 
+<p align="center"><a href="examples/live-run/battlecards/hyperbound.md"><img src="assets/example-battlecard.svg" alt="Excerpt of the real Hyperbound battlecard from the live run: pricing and packaging, where they are strong, where Rehearsely likely wins, and how to handle them in a sales conversation." width="100%"></a></p>
+
 The battlecards are useful because they stick to what the pages say. For example, Hyperbound's banking page lists **Hindi, Gujarati, Marathi and Tamil**, so its card says plainly that "we support Hindi" is _not_ a differentiator against them, and steers the pitch to Indian BFSI and pharma depth instead.
 
 **What the run taught us about real sites** (now in [Limitations](#limitations)):
@@ -133,6 +135,10 @@ The engine did everything for real: robots.txt checks, live fetches, extraction,
 </details>
 
 **What a change looks like:** the live run had no changes to show yet, so these **fictional** samples (made with the real digest and battlecard code) show a weekly change: a [weekly digest](examples/digest-weekly.md) with a material pricing change and a keyword trigger, the [baseline digest](examples/digest-baseline.md), and a [battlecard after an update](examples/battlecard.md).
+
+<p align="center"><a href="examples/digest-weekly.md"><img src="assets/example-digest.svg" alt="Sample weekly digest (fictional companies): a material pricing change with a keyword trigger and a full analysis, plus two minor changes and the run cost." width="100%"></a></p>
+
+<p align="center"><img src="assets/example-notification.svg" alt="Sample Slack or Discord message: date, headline, one line per change, and a link to the full digest." width="100%"></p>
 
 ---
 
