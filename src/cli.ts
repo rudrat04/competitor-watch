@@ -12,7 +12,16 @@ import Anthropic from '@anthropic-ai/sdk';
 import { CostTracker, formatCost, resolveModelsAndPrices } from './cost.js';
 import { createLlm } from './llm/client.js';
 import { createClassifier } from './llm/classify.js';
-import { createLinks, detectGithub, repoRelativeDataDir } from './github/context.js';
+import { appendFileSync } from 'node:fs';
+import {
+  createLinks,
+  detectGithub,
+  digestLocation,
+  repoRelativeDataDir,
+  visibilityGuard,
+} from './github/context.js';
+import { shortSummary } from './outputs/digest.js';
+import { notifyAll } from './outputs/notify/index.js';
 import { battlecardPath, rebuildBattlecard } from './outputs/battlecards.js';
 import { slugify } from './config.js';
 import { checkPages, needsBrowser } from './check.js';
@@ -47,6 +56,29 @@ async function loadOrExit(): Promise<Config | null> {
       process.exit(EXIT.CONFIG);
     }
     throw err;
+  }
+}
+
+/** Print an error; inside GitHub Actions also as an annotation so it shows in the run UI. */
+function fail(message: string, code: number): never {
+  console.error(process.env.GITHUB_ACTIONS === 'true' ? `::error::${message}` : message);
+  process.exit(code);
+}
+
+/** PLAN.md §10.3: refuse to write anything from a public repo (exit 4). */
+async function guardOrExit(config: Config): Promise<void> {
+  const guard = await visibilityGuard({ allowPublicRepo: config.settings.allow_public_repo });
+  if (!guard.ok) fail(guard.message, EXIT.PUBLIC_REPO);
+  if (guard.warning) console.warn(guard.warning);
+}
+
+function requireApiKey(): void {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    fail(
+      'ANTHROPIC_API_KEY is not set. Add it to .env (local) or as a repository secret ' +
+        '(Settings → Secrets and variables → Actions).',
+      EXIT.CONFIG,
+    );
   }
 }
 
@@ -97,6 +129,7 @@ program
       dataDir: string;
       maxCost?: number;
       verbose?: boolean;
+      notify: boolean;
     }) => {
       const config = await loadOrExit();
       if (!config) return;
@@ -107,12 +140,8 @@ program
         }
         config.settings.max_cost_usd = opts.maxCost;
       }
-      if (!process.env.ANTHROPIC_API_KEY) {
-        console.error(
-          'ANTHROPIC_API_KEY is not set. Add it to .env (local) or to your repo secrets (GitHub Actions).',
-        );
-        process.exit(EXIT.CONFIG);
-      }
+      await guardOrExit(config);
+      requireApiKey();
       try {
         const { models, prices } = resolveModelsAndPrices(config);
         const cost = new CostTracker(config.settings.max_cost_usd, prices);
@@ -123,17 +152,52 @@ program
           company: config.company,
           getBattlecard: async (slug) => storage.read(battlecardPath(slug)),
         });
-        const links = createLinks(detectGithub(), repoRelativeDataDir(opts.dataDir));
+        const gh = detectGithub();
+        const dataDirRel = repoRelativeDataDir(opts.dataDir);
         const result = await runPipeline(
           config,
-          { fetcher: createFetcher(), storage, classify, cost, llm, links },
+          {
+            fetcher: createFetcher(),
+            storage,
+            classify,
+            cost,
+            llm,
+            links: createLinks(gh, dataDirRel),
+          },
           { dryRun: opts.dryRun, only: opts.only },
         );
         if (opts.dryRun) console.log('DRY RUN — nothing was written. The digest would be:\n');
         console.log(result.digest);
         if (opts.verbose) console.log(`\n--- page report ---\n${formatReport(result)}`);
-        else if (!opts.dryRun)
-          console.log(`Digest written to ${opts.dataDir}/${result.digestPath}`);
+        if (opts.dryRun) return;
+        console.log(`Digest written to ${opts.dataDir}/${result.digestPath}`);
+
+        const date = result.digestPath.replace(/^digests\/|\.md$/g, '').slice(0, 10);
+        if (opts.notify) {
+          const sent = await notifyAll({
+            result,
+            config,
+            date,
+            digestUrl: digestLocation(gh, dataDirRel, result.digestPath),
+          });
+          for (const n of sent) {
+            if (n.status === 'sent')
+              console.log(`Notified ${n.channel}${n.detail ? `: ${n.detail}` : ''}`);
+            else if (n.status === 'failed')
+              console.warn(`Warning: ${n.channel} notification failed: ${n.detail}`);
+            else if (opts.verbose) console.log(`Skipped ${n.channel}: ${n.detail}`);
+          }
+        }
+        // Inside Actions: a summary for the commit message, and the digest on the run page.
+        if (process.env.GITHUB_OUTPUT) {
+          appendFileSync(
+            process.env.GITHUB_OUTPUT,
+            `summary=${shortSummary(result.outcomes)} (${date})\n`,
+          );
+        }
+        if (process.env.GITHUB_STEP_SUMMARY) {
+          appendFileSync(process.env.GITHUB_STEP_SUMMARY, result.digest);
+        }
       } catch (err) {
         if (err instanceof ConfigError) {
           console.error(err.message);
@@ -163,10 +227,8 @@ program
       console.log(card ?? `No battlecard for "${slug}" yet. Run "competitor-watch run" first.`);
       return;
     }
-    if (!process.env.ANTHROPIC_API_KEY) {
-      console.error('ANTHROPIC_API_KEY is not set.');
-      process.exit(EXIT.CONFIG);
-    }
+    await guardOrExit(config);
+    requireApiKey();
     try {
       const { models, prices } = resolveModelsAndPrices(config);
       const cost = new CostTracker(config.settings.max_cost_usd, prices);

@@ -1,5 +1,5 @@
 import { execFileSync, spawnSync } from 'node:child_process';
-import { copyFileSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdtempSync, readdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { beforeAll, describe, expect, it } from 'vitest';
@@ -87,5 +87,36 @@ describe('cli run without a key', () => {
     const r = spawnSync('node', [cli, 'run'], { cwd: dir, encoding: 'utf8', env });
     expect(r.status).toBe(1);
     expect(r.stderr).toContain('ANTHROPIC_API_KEY');
+  });
+});
+
+describe('cli visibility guard', () => {
+  it('in Actions without a token (visibility unknown): exit 4, nothing written, no network', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cw-'));
+    writeFileSync(
+      join(dir, 'competitors.yaml'),
+      'company: {name: Acme, description: Anvils}\ncompetitors:\n  - name: Rival\n    pages:\n      - {type: pricing, url: "https://rival.io/p"}\n',
+    );
+    const env: NodeJS.ProcessEnv = {
+      ...process.env,
+      GITHUB_ACTIONS: 'true',
+      GITHUB_REPOSITORY: 'me/watch',
+      ANTHROPIC_API_KEY: 'sk-test',
+    };
+    delete env.GITHUB_TOKEN;
+    const r = spawnSync('node', [cli, 'run'], { cwd: dir, encoding: 'utf8', env });
+    expect(r.status).toBe(4);
+    expect(r.stderr).toContain('::error::This repo is public');
+    expect(readdirSync(dir)).toEqual(['competitors.yaml']);
+  });
+
+  it('placeholder config still exits 0 before the guard (template repos stay quiet)', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cw-'));
+    copyFileSync(join(root, 'competitors.example.yaml'), join(dir, 'competitors.yaml'));
+    const env: NodeJS.ProcessEnv = { ...process.env, GITHUB_ACTIONS: 'true' };
+    delete env.GITHUB_TOKEN;
+    const r = spawnSync('node', [cli, 'run'], { cwd: dir, encoding: 'utf8', env });
+    expect(r.status).toBe(0);
+    expect(r.stdout).toContain('Not configured yet');
   });
 });

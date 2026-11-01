@@ -33,33 +33,50 @@ export function unwatchedPages(config: Config, state: State): string[] {
     .sort();
 }
 
+/** e.g. "2 material, 3 minor changes across 4 competitors" (PLAN.md §7.7). */
+export function digestHeadline(outcomes: PageOutcome[]): string {
+  const material = outcomes.filter((o) => o.status === 'material').length;
+  const minor = outcomes.filter((o) => o.status === 'minor').length;
+  if (material + minor > 0) {
+    const changed = new Set(
+      outcomes.filter((o) => o.status === 'material' || o.status === 'minor').map((o) => o.slug),
+    );
+    const parts = [material ? `${material} material` : '', minor ? `${minor} minor` : ''].filter(
+      Boolean,
+    );
+    return `${parts.join(', ')} ${material + minor === 1 ? 'change' : 'changes'} across ${plural(changed.size, 'competitor')}`;
+  }
+  const baselines = outcomes.filter((o) => o.status === 'baseline');
+  if (baselines.length > 0) {
+    const comps = new Set(baselines.map((o) => o.slug));
+    return `Baseline created for ${plural(comps.size, 'competitor')}, ${plural(baselines.length, 'page')}`;
+  }
+  return 'No meaningful changes';
+}
+
+/** Compact form for commit messages and titles, e.g. "2 material, 3 minor" or "baseline". */
+export function shortSummary(outcomes: PageOutcome[]): string {
+  const material = outcomes.filter((o) => o.status === 'material').length;
+  const minor = outcomes.filter((o) => o.status === 'minor').length;
+  if (material + minor > 0) {
+    return [material ? `${material} material` : '', minor ? `${minor} minor` : '']
+      .filter(Boolean)
+      .join(', ');
+  }
+  if (outcomes.some((o) => o.status === 'baseline')) return 'baseline';
+  return 'no changes';
+}
+
 export function buildDigest(input: DigestInput): string {
   const { outcomes, links } = input;
   const material = outcomes.filter((o) => o.status === 'material');
   const minor = outcomes.filter((o) => o.status === 'minor');
   const baselines = outcomes.filter((o) => o.status === 'baseline');
-  const changedCompetitors = new Set([...material, ...minor].map((o) => o.slug));
   const baselineCompetitors = new Set(baselines.map((o) => o.slug));
 
   const out: string[] = [`# Competitor Watch — ${input.date}`, ''];
 
-  // Headline
-  if (material.length + minor.length > 0) {
-    const parts = [
-      material.length ? `${material.length} material` : '',
-      minor.length ? `${minor.length} minor` : '',
-    ].filter(Boolean);
-    out.push(
-      `**${parts.join(', ')} ${material.length + minor.length === 1 ? 'change' : 'changes'} across ${plural(changedCompetitors.size, 'competitor')}**`,
-    );
-  } else if (baselines.length > 0) {
-    out.push(
-      `**Baseline created for ${plural(baselineCompetitors.size, 'competitor')}, ${plural(baselines.length, 'page')}**`,
-    );
-  } else {
-    out.push('**No meaningful changes**');
-  }
-  out.push('');
+  out.push(`**${digestHeadline(outcomes)}**`, '');
 
   // Baseline + battlecards
   if (baselines.length > 0 && (material.length > 0 || minor.length > 0)) {
