@@ -37,7 +37,7 @@ export async function capturePage(page: PageConfig, deps: CaptureDeps): Promise<
 }
 
 export type ProcessResult =
-  | { status: 'baseline' }
+  | { status: 'baseline'; detail?: string }
   | { status: 'unchanged' }
   /** Content differs from the stored snapshot. Not yet saved: the diff stage decides. */
   | { status: 'changed'; markdown: string; hash: string; previousHash: string }
@@ -88,17 +88,21 @@ export async function processPage(
     return { status: 'error', message: capture.message };
   }
 
-  if (!previous?.hash) {
+  // A new page, or the config now points this page id at a different URL: diffing against
+  // the old URL's snapshot would report a whole different page as one big change.
+  if (!previous?.hash || previous.url !== page.url) {
     await ctx.storage.write(snapshotPath(slug, pageId), capture.markdown);
     update({ hash: capture.hash, last_changed: stamp, last_status: 'baseline' });
-    return { status: 'baseline' };
+    return previous?.hash
+      ? { status: 'baseline', detail: `URL changed from ${previous.url}; new baseline` }
+      : { status: 'baseline' };
   }
   if (previous.hash === capture.hash) {
     update({ last_status: 'unchanged' });
     return { status: 'unchanged' };
   }
-  // Leave hash/status untouched except last_checked; the diff stage (M3) finishes the job.
-  update({});
+  // Leave hash and status as they were; the diff stage records the outcome.
+  update({ last_status: previous.last_status, last_error: previous.last_error });
   return {
     status: 'changed',
     markdown: capture.markdown,

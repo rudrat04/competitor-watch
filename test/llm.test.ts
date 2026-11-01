@@ -6,6 +6,7 @@ import { CapReachedError, LlmError, createLlm, type MessagesApi } from '../src/l
 import { createClassifier } from '../src/llm/classify.js';
 import { DEFAULT_MODELS, DEFAULT_PRICES, MAX_DIFF_CHARS } from '../src/llm/defaults.js';
 import { fence, limitDiff, loadPrompt } from '../src/llm/prompts.js';
+import * as schemasForTest from '../src/llm/schemas.js';
 import { analysisSchema, toJsonSchema, triageSchema } from '../src/llm/schemas.js';
 import { buildTriageMessage, triage } from '../src/llm/triage.js';
 import { DeferChange, type ChangeInput } from '../src/run.js';
@@ -100,6 +101,17 @@ describe('schemas', () => {
     expect(triageSchema.safeParse({ ...T, significance: 'huge' }).success).toBe(false);
     expect(analysisSchema.safeParse(A).success).toBe(true);
     expect(analysisSchema.safeParse({ ...A, confidence: 'certain' }).success).toBe(false);
+    expect(analysisSchema.safeParse({ ...A, what_changed: '' }).success).toBe(false);
+  });
+
+  it('never send keywords the structured-outputs API rejects (zod still enforces them)', () => {
+    const { battlecardUpdateSchema } = schemasForTest;
+    for (const schema of [triageSchema, analysisSchema, battlecardUpdateSchema]) {
+      const text = JSON.stringify(toJsonSchema(schema));
+      for (const k of ['minLength', 'maxLength', 'minimum', 'maximum', '$schema']) {
+        expect(text).not.toContain(`"${k}"`);
+      }
+    }
     expect(analysisSchema.safeParse({ ...A, what_changed: '' }).success).toBe(false);
   });
 

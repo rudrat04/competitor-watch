@@ -25,11 +25,38 @@ export const analysisSchema = z.object({
 });
 export type Analysis = z.infer<typeof analysisSchema>;
 
+/**
+ * Keywords the structured-outputs API does not accept. They are stripped from the schema we
+ * send; zod still enforces them on the response (and a failure triggers the one retry).
+ */
+const UNSUPPORTED_KEYWORDS = new Set([
+  '$schema',
+  'minLength',
+  'maxLength',
+  'minimum',
+  'maximum',
+  'exclusiveMinimum',
+  'exclusiveMaximum',
+  'multipleOf',
+  'minItems',
+  'maxItems',
+]);
+
+function stripUnsupported(node: unknown): unknown {
+  if (Array.isArray(node)) return node.map(stripUnsupported);
+  if (node && typeof node === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(node)) {
+      if (!UNSUPPORTED_KEYWORDS.has(k)) out[k] = stripUnsupported(v);
+    }
+    return out;
+  }
+  return node;
+}
+
 /** JSON Schema for the API's structured-output constraint. */
 export function toJsonSchema(schema: z.ZodType): Record<string, unknown> {
-  const out = { ...(z.toJSONSchema(schema) as Record<string, unknown>) };
-  delete out.$schema;
-  return out;
+  return stripUnsupported(z.toJSONSchema(schema)) as Record<string, unknown>;
 }
 
 /** Battlecard creation: the five sections the model writes ("Recent changes" is code-built). */

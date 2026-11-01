@@ -275,3 +275,28 @@ describe('runPipeline with the LLM stage', () => {
     expect(text).toMatch(/Cost: \$0\.0001 of \$1\.00 cap/);
   });
 });
+
+describe('review fixes', () => {
+  it('a page whose URL changed in the config is re-baselined, not diffed', async () => {
+    const e = env();
+    await e.go({ [P]: before, [H]: home });
+    const moved = parseConfig(yaml().replace(P, 'https://rival.io/plans'));
+    const classify = vi.fn(material);
+    const r = await e.go({ 'https://rival.io/plans': after, [H]: home }, {}, classify, moved);
+    expect(r.outcomes[0]).toMatchObject({
+      status: 'baseline',
+      detail: expect.stringContaining('URL changed'),
+    });
+    expect(classify).not.toHaveBeenCalled();
+    expect(JSON.parse(e.read('state.json')).pages['rival/pricing'].url).toBe(
+      'https://rival.io/plans',
+    );
+  });
+
+  it('a deferred page keeps its previous last_status', async () => {
+    const e = env();
+    await e.go({ [P]: before, [H]: home });
+    await e.go({ [P]: after, [H]: home }); // no classifier -> deferred
+    expect(JSON.parse(e.read('state.json')).pages['rival/pricing'].last_status).toBe('baseline');
+  });
+});

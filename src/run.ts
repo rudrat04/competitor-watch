@@ -154,6 +154,10 @@ export async function runPipeline(
         outcomes.push({ ...base, status: 'error', detail: result.message });
         continue;
       }
+      if (result.status === 'baseline') {
+        outcomes.push({ ...base, status: 'baseline', detail: result.detail });
+        continue;
+      }
       if (result.status !== 'changed') {
         outcomes.push({ ...base, status: result.status });
         continue;
