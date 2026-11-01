@@ -109,6 +109,21 @@ describe('cli run without a key', () => {
   });
 });
 
+describe('cli run with a leaked comment as the key', () => {
+  it('exits 1 and explains, instead of calling the API with a bogus key', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cw-'));
+    writeFileSync(
+      join(dir, 'competitors.yaml'),
+      'company: {name: Acme, description: Anvils}\ncompetitors:\n  - name: Rival\n    pages:\n      - {type: pricing, url: "https://rival.io/p"}\n',
+    );
+    const env = cleanEnv({ ANTHROPIC_API_KEY: '      # required — https://console.anthropic.com' });
+    const r = spawnSync('node', [cli, 'run'], { cwd: dir, encoding: 'utf8', env });
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain('looks like a comment');
+    expect(readdirSync(dir)).toEqual(['competitors.yaml']);
+  });
+});
+
 describe('cli visibility guard', () => {
   it('in Actions without a token (visibility unknown): exit 4, nothing written, no network', () => {
     const dir = mkdtempSync(join(tmpdir(), 'cw-'));

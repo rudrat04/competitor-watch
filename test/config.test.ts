@@ -114,3 +114,32 @@ describe('slugify', () => {
     expect(slugify('!!!')).toBe('');
   });
 });
+
+describe('apiKeyProblem', () => {
+  it('accepts a real-looking key', async () => {
+    const { apiKeyProblem } = await import('../src/config.js');
+    expect(apiKeyProblem('sk-ant-api03-abc')).toBeNull();
+    expect(apiKeyProblem('  sk-ant-api03-abc  ')).toBeNull();
+  });
+
+  it('rejects missing and blank keys', async () => {
+    const { apiKeyProblem } = await import('../src/config.js');
+    expect(apiKeyProblem(undefined)).toMatch(/is not set/);
+    expect(apiKeyProblem('   ')).toMatch(/is not set/);
+  });
+
+  it('rejects a comment that leaked into the value (Docker --env-file has no inline comments)', async () => {
+    const { apiKeyProblem } = await import('../src/config.js');
+    expect(apiKeyProblem('      # required — https://console.anthropic.com')).toMatch(
+      /looks like a comment/,
+    );
+  });
+});
+
+describe('.env.example', () => {
+  it('keeps comments on their own lines, so it works with Docker --env-file too', () => {
+    for (const line of readFileSync('.env.example', 'utf8').split('\n')) {
+      if (line.includes('=')) expect(line, line).not.toContain('#');
+    }
+  });
+});

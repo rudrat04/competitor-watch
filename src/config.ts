@@ -185,3 +185,25 @@ export function notConfiguredReason(config: Config): string | null {
 }
 
 export const NOT_CONFIGURED_MESSAGE = 'Not configured yet — edit competitors.yaml';
+
+/**
+ * Why the API key can't be used, or null. A value starting with "#" is a comment that leaked
+ * into the value: Docker's --env-file (unlike dotenv) has no inline comments, so
+ * `KEY=   # note` sets KEY to "# note".
+ */
+export function apiKeyProblem(value: string | undefined): string | null {
+  const key = value?.trim() ?? '';
+  if (!key) {
+    return (
+      'ANTHROPIC_API_KEY is not set. Add it to .env (local) or as a repository secret ' +
+      '(Settings → Secrets and variables → Actions).'
+    );
+  }
+  if (key.startsWith('#')) {
+    return (
+      'ANTHROPIC_API_KEY looks like a comment, not a key. Put comments in .env on their own ' +
+      'line: Docker --env-file treats "KEY=   # note" as the value "# note".'
+    );
+  }
+  return null;
+}

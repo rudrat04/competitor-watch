@@ -4,6 +4,7 @@ import { config as loadDotenv } from 'dotenv';
 import {
   ConfigError,
   NOT_CONFIGURED_MESSAGE,
+  apiKeyProblem,
   loadConfig,
   notConfiguredReason,
   type Config,
@@ -68,13 +69,8 @@ async function guardOrExit(config: Config): Promise<void> {
 }
 
 function requireApiKey(): void {
-  if (!process.env.ANTHROPIC_API_KEY) {
-    fail(
-      'ANTHROPIC_API_KEY is not set. Add it to .env (local) or as a repository secret ' +
-        '(Settings → Secrets and variables → Actions).',
-      EXIT.CONFIG,
-    );
-  }
+  const problem = apiKeyProblem(process.env.ANTHROPIC_API_KEY);
+  if (problem) fail(problem, EXIT.CONFIG);
 }
 
 const program = new Command();
