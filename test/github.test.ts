@@ -248,6 +248,41 @@ describe('github issue notifier', () => {
   });
 });
 
+describe('untrusted text in notifications', () => {
+  it('issue body and title never @-mention anyone, but keep emails', async () => {
+    const { defuseMentions } = await import('../src/outputs/notify/github-issue.js');
+    expect(defuseMentions('ping @octocat and (@team) and mail sales@rival.io')).toBe(
+      'ping @\u200boctocat and (@\u200bteam) and mail sales@rival.io',
+    );
+    expect(issueBody('@everyone look', 'u')).not.toMatch(/@everyone/);
+    const f = mockFetch(() => [201, {}]);
+    await createDigestIssue({
+      title: 'hi @bob',
+      digest: 'x',
+      digestUrl: 'u',
+      env: ACTIONS,
+      fetchImpl: f.impl,
+    });
+    expect(f.calls.find((c) => c.url.endsWith('/issues'))?.body.title).toBe('hi @\u200bbob');
+  });
+
+  it('slack text escapes &, < and > so scraped text cannot ping or disguise links', async () => {
+    const { escapeSlack } = await import('../src/outputs/notify/slack.js');
+    expect(escapeSlack('<!channel> & <https://evil|ok>')).toBe(
+      '&lt;!channel&gt; &amp; &lt;https://evil|ok&gt;',
+    );
+    const text = slackText({
+      date: 'd',
+      headline: 'h',
+      items: ['<!here> free'],
+      more: 0,
+      digestUrl: 'https://x/d.md',
+    });
+    expect(text).not.toContain('<!here>');
+    expect(text).toContain('<https://x/d.md|Read the full digest>'); // our own link still works
+  });
+});
+
 describe('slack and discord notifiers', () => {
   const s: NotifySummary = {
     date: '2026-11-02',

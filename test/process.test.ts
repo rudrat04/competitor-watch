@@ -155,3 +155,32 @@ competitors:
     expect(needsBrowser(config)).toBe(true);
   });
 });
+
+describe('importPlaywright', () => {
+  // Simulates the npx case: no Playwright next to the engine.
+  const notNextToEngine = async () => {
+    throw new Error('Cannot find package playwright');
+  };
+
+  it('finds Playwright installed in the folder the CLI runs from (the npx case)', async () => {
+    const { importPlaywright } = await import('../src/fetch/render.js');
+    const { mkdirSync, writeFileSync } = await import('node:fs');
+    const dir = mkdtempSync(join(tmpdir(), 'cw-pw-'));
+    mkdirSync(join(dir, 'node_modules/playwright'), { recursive: true });
+    writeFileSync(
+      join(dir, 'node_modules/playwright/package.json'),
+      '{"name":"playwright","main":"index.js"}',
+    );
+    writeFileSync(
+      join(dir, 'node_modules/playwright/index.js'),
+      'exports.chromium = { fake: true };',
+    );
+    const mod = (await importPlaywright(dir, notNextToEngine)) as { chromium: { fake: boolean } };
+    expect(mod.chromium.fake).toBe(true);
+  });
+
+  it('when Playwright is nowhere, the error explains how to install it', async () => {
+    // Real resolution can't simulate "nowhere" here: this environment sets a global NODE_PATH.
+    await expect(loadPlaywright(notNextToEngine)).rejects.toThrow(/In the folder you run from/);
+  });
+});

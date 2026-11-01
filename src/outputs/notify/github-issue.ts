@@ -5,9 +5,19 @@ export const ISSUE_LABEL = 'competitor-watch';
 /** GitHub rejects issue bodies over 65,536 characters. */
 const MAX_BODY = 60_000;
 
+/**
+ * "@name" in an issue notifies that GitHub user, and digest text comes from scraped pages and
+ * model output. A zero-width space after "@" keeps it readable without pinging anyone.
+ * (Email addresses are untouched: their "@" follows a word character.)
+ */
+export function defuseMentions(text: string): string {
+  return text.replace(/(^|[^\w`])@(?=[A-Za-z0-9])/g, '$1@\u200b');
+}
+
 export function issueBody(digest: string, digestUrl: string): string {
-  if (digest.length <= MAX_BODY) return digest;
-  return `${digest.slice(0, MAX_BODY)}\n\n…\n\n_This digest was too long for an issue. [Read the full digest](${digestUrl})._\n`;
+  const safe = defuseMentions(digest);
+  if (safe.length <= MAX_BODY) return safe;
+  return `${safe.slice(0, MAX_BODY)}\n\n…\n\n_This digest was too long for an issue. [Read the full digest](${digestUrl})._\n`;
 }
 
 /**
@@ -49,7 +59,11 @@ export async function createDigestIssue(opts: {
     const res = await postJson(
       opts.fetchImpl,
       `${base}/issues`,
-      { title: opts.title, body: issueBody(opts.digest, opts.digestUrl), labels: [ISSUE_LABEL] },
+      {
+        title: defuseMentions(opts.title),
+        body: issueBody(opts.digest, opts.digestUrl),
+        labels: [ISSUE_LABEL],
+      },
       headers,
     );
     if (res.ok) {

@@ -3,9 +3,17 @@ import type { NotifySummary } from './index.js';
 
 const isUrl = (s: string): boolean => /^https?:\/\//.test(s);
 
+/**
+ * Slack's required escaping for message text. Without it, scraped text such as "<!channel>"
+ * would ping the whole channel, or "<https://evil|innocent>" would disguise a link.
+ */
+export function escapeSlack(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 export function slackText(s: NotifySummary): string {
-  const lines = [`*Competitor Watch — ${s.date}*: ${s.headline}`];
-  for (const item of s.items) lines.push(`• ${item}`);
+  const lines = [`*Competitor Watch — ${s.date}*: ${escapeSlack(s.headline)}`];
+  for (const item of s.items) lines.push(`• ${escapeSlack(item)}`);
   if (s.more > 0) lines.push(`• …and ${s.more} more`);
   lines.push(
     isUrl(s.digestUrl) ? `<${s.digestUrl}|Read the full digest>` : `Digest: ${s.digestUrl}`,

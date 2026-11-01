@@ -44,6 +44,9 @@ describe('template/ workflow', () => {
     const browser = step('Install a browser').run!;
     expect(browser).toContain('competitor-watch info --needs-browser');
     expect(browser).toContain('playwright install --with-deps chromium');
+    // A separate `npm install --no-save playwright` would prune the engine (verified with npm 10).
+    expect(browser).toContain('npm install --no-save "$CW_PACKAGE" playwright');
+    expect(browser).not.toMatch(/npm install --no-save playwright/);
     const run = step('Run');
     expect(run.run).toContain('competitor-watch run');
     expect(Object.keys(run.env!).sort()).toEqual([

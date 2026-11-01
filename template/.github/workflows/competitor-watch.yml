@@ -43,7 +43,9 @@ jobs:
       - name: Install a browser (only if a page has render true)
         run: |
           if [ "$(npx --no-install competitor-watch info --needs-browser)" = "true" ]; then
-            npm install --no-save playwright
+            # Install both in one command: a second "npm install --no-save" would prune the
+            # engine installed above (there is no package.json to keep it).
+            npm install --no-save "$CW_PACKAGE" playwright
             npx --no-install playwright install --with-deps chromium
           fi
 
