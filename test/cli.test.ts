@@ -14,8 +14,21 @@ import { beforeAll, describe, expect, it } from 'vitest';
 const root = resolve('.');
 const cli = join(root, 'dist/cli.js');
 
+/**
+ * The environment a spawned CLI sees: the parent's, minus anything that changes its behaviour.
+ * Without this, tests running inside GitHub Actions (GITHUB_ACTIONS=true) would hit the
+ * visibility guard, and could append to the real job's GITHUB_OUTPUT / GITHUB_STEP_SUMMARY.
+ */
+function cleanEnv(extra: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = {};
+  for (const [k, v] of Object.entries(process.env)) {
+    if (!/^(GITHUB_|RUNNER_|ANTHROPIC_|SLACK_|DISCORD_|CI$)/.test(k)) env[k] = v;
+  }
+  return { ...env, ...extra };
+}
+
 function run(cwd: string, ...args: string[]) {
-  return spawnSync('node', [cli, ...args], { cwd, encoding: 'utf8' });
+  return spawnSync('node', [cli, ...args], { cwd, encoding: 'utf8', env: cleanEnv() });
 }
 
 beforeAll(() => {
@@ -89,8 +102,7 @@ describe('cli run without a key', () => {
       join(dir, 'competitors.yaml'),
       'company: {name: Acme, description: Anvils}\ncompetitors:\n  - name: Rival\n    pages:\n      - {type: pricing, url: "https://rival.io/p"}\n',
     );
-    const env = { ...process.env };
-    delete env.ANTHROPIC_API_KEY;
+    const env = cleanEnv(); // no ANTHROPIC_API_KEY, and not "inside Actions"
     const r = spawnSync('node', [cli, 'run'], { cwd: dir, encoding: 'utf8', env });
     expect(r.status).toBe(1);
     expect(r.stderr).toContain('ANTHROPIC_API_KEY');
@@ -104,13 +116,12 @@ describe('cli visibility guard', () => {
       join(dir, 'competitors.yaml'),
       'company: {name: Acme, description: Anvils}\ncompetitors:\n  - name: Rival\n    pages:\n      - {type: pricing, url: "https://rival.io/p"}\n',
     );
-    const env: NodeJS.ProcessEnv = {
-      ...process.env,
+    // Inside Actions, but no GITHUB_TOKEN: visibility can't be checked.
+    const env = cleanEnv({
       GITHUB_ACTIONS: 'true',
       GITHUB_REPOSITORY: 'me/watch',
       ANTHROPIC_API_KEY: 'sk-test',
-    };
-    delete env.GITHUB_TOKEN;
+    });
     const r = spawnSync('node', [cli, 'run'], { cwd: dir, encoding: 'utf8', env });
     expect(r.status).toBe(4);
     expect(r.stderr).toContain('::error::This repo is public');
@@ -120,8 +131,7 @@ describe('cli visibility guard', () => {
   it('placeholder config still exits 0 before the guard (template repos stay quiet)', () => {
     const dir = mkdtempSync(join(tmpdir(), 'cw-'));
     copyFileSync(join(root, 'competitors.example.yaml'), join(dir, 'competitors.yaml'));
-    const env: NodeJS.ProcessEnv = { ...process.env, GITHUB_ACTIONS: 'true' };
-    delete env.GITHUB_TOKEN;
+    const env = cleanEnv({ GITHUB_ACTIONS: 'true' });
     const r = spawnSync('node', [cli, 'run'], { cwd: dir, encoding: 'utf8', env });
     expect(r.status).toBe(0);
     expect(r.stdout).toContain('Not configured yet');
