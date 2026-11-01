@@ -36,9 +36,12 @@ competitors:
 `;
 
 /** Kept identical to .env.example by a test. */
-export const EXAMPLE_ENV = `ANTHROPIC_API_KEY=      # required — https://console.anthropic.com
-SLACK_WEBHOOK_URL=      # optional
-DISCORD_WEBHOOK_URL=    # optional
+export const EXAMPLE_ENV = `# Required: https://console.anthropic.com
+ANTHROPIC_API_KEY=
+# Optional
+SLACK_WEBHOOK_URL=
+# Optional
+DISCORD_WEBHOOK_URL=
 `;
 
 export interface InitResult {
