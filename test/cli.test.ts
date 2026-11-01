@@ -43,3 +43,34 @@ describe('cli', () => {
       expect(r.stdout).toContain(cmd);
   });
 });
+
+describe('cli info --needs-browser', () => {
+  const write = (yaml: string) => {
+    const dir = mkdtempSync(join(tmpdir(), 'cw-'));
+    writeFileSync(join(dir, 'competitors.yaml'), yaml);
+    return dir;
+  };
+  const base = `company: {name: Acme, description: Anvils}
+competitors:
+  - name: Rival
+    pages:
+      - {type: pricing, url: "https://rival.io/p"__RENDER__}
+`;
+
+  it('prints false when no page renders', () => {
+    const r = run(write(base.replace('__RENDER__', '')), 'info', '--needs-browser');
+    expect(r.stdout.trim()).toBe('false');
+    expect(r.status).toBe(0);
+  });
+
+  it('prints true when a page has render: true', () => {
+    const r = run(write(base.replace('__RENDER__', ', render: true')), 'info', '--needs-browser');
+    expect(r.stdout.trim()).toBe('true');
+  });
+
+  it('prints a bare true/false even on the placeholder config', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cw-'));
+    copyFileSync(join(root, 'competitors.example.yaml'), join(dir, 'competitors.yaml'));
+    expect(run(dir, 'info', '--needs-browser').stdout.trim()).toBe('true');
+  });
+});

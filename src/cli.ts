@@ -8,6 +8,8 @@ import {
   notConfiguredReason,
   type Config,
 } from './config.js';
+import { checkPages, needsBrowser } from './check.js';
+import { createFetcher } from './fetch/fetcher.js';
 import { BIN_NAME, EXIT, VERSION } from './constants.js';
 
 const CONFIG_PATH = 'competitors.yaml';
@@ -54,8 +56,20 @@ program
   .command('check')
   .description('validate config and test-fetch every page (no LLM, no writes)')
   .action(async () => {
-    if (!(await loadOrExit())) return;
-    notImplemented('check');
+    const config = await loadOrExit();
+    if (!config) return;
+    const lines = await checkPages(config, { fetcher: createFetcher() });
+    for (const l of lines) {
+      console.log(
+        `${l.ok ? 'ok   ' : 'FAIL '} ${l.competitor} / ${l.pageId}  ${l.url}\n       ${l.detail}`,
+      );
+    }
+    const bad = lines.filter((l) => !l.ok).length;
+    console.log(
+      bad === 0
+        ? `\nAll ${lines.length} pages reachable.`
+        : `\n${bad} of ${lines.length} pages need attention.`,
+    );
   });
 
 program
@@ -85,8 +99,21 @@ program
   .command('info')
   .description('print facts about the config')
   .option('--needs-browser', 'print "true" if any page has render: true, else "false"')
-  .action(async () => {
-    notImplemented('info');
+  .action(async (opts: { needsBrowser?: boolean }) => {
+    if (!opts.needsBrowser) {
+      console.error('Specify what to print, e.g. --needs-browser');
+      process.exit(EXIT.CONFIG);
+    }
+    // No placeholder gate: this must print a clean "true"/"false" for scripts.
+    try {
+      console.log(needsBrowser(await loadConfig(CONFIG_PATH)) ? 'true' : 'false');
+    } catch (err) {
+      if (err instanceof ConfigError) {
+        console.error(err.message);
+        process.exit(EXIT.CONFIG);
+      }
+      throw err;
+    }
   });
 
 loadDotenv({ quiet: true });
