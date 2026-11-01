@@ -1,0 +1,76 @@
+name: Competitor Watch
+
+on:
+  schedule:
+    # Every Monday at 03:17 UTC. To change it, edit this cron line (minute hour day month weekday),
+    # e.g. "17 3 * * *" for every day. https://crontab.guru helps. Scheduled runs can be
+    # delayed by GitHub during busy periods.
+    - cron: '17 3 * * 1'
+  workflow_dispatch: # lets you click "Run workflow" in the Actions tab
+
+permissions:
+  contents: write # commit snapshots, digests and battlecards to data/
+  issues: write # open one digest issue per run
+
+concurrency:
+  group: competitor-watch
+  cancel-in-progress: false
+
+env:
+  # "@1" means "latest 1.x": fixes arrive automatically on every run, with no merges.
+  # Pin an exact version (e.g. "@rudrat04/competitor-watch@1.2.3") for fully reproducible runs.
+  CW_PACKAGE: '@rudrat04/competitor-watch@1'
+
+jobs:
+  watch:
+    # Never runs in the public template repo itself, only in repos created from it.
+    if: github.repository != 'rudrat04/competitor-watch-template'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Competitor Watch
+        # No package.json here, so nothing is saved; node_modules/ is gitignored.
+        run: npm install --no-save "$CW_PACKAGE"
+
+      - name: Install a browser (only if a page has render true)
+        run: |
+          if [ "$(npx --no-install competitor-watch info --needs-browser)" = "true" ]; then
+            # Install both in one command: a second "npm install --no-save" would prune the
+            # engine installed above (there is no package.json to keep it).
+            npm install --no-save "$CW_PACKAGE" playwright
+            npx --no-install playwright install --with-deps chromium
+          fi
+
+      - name: Run
+        id: run
+        # Exits early with a clear error if ANTHROPIC_API_KEY is missing (once competitors.yaml
+        # is filled in; until then it just prints "Not configured yet" and does nothing).
+        run: npx --no-install competitor-watch run
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Commit data
+        env:
+          MESSAGE: "watch: ${{ steps.run.outputs.summary || 'update' }}"
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/
+          if git diff --cached --quiet; then
+            echo "Nothing to commit."
+            exit 0
+          fi
+          git commit -m "$MESSAGE"
+          # If competitors.yaml was edited during the run, rebase onto it and try again.
+          git push || (git pull --rebase && git push)

@@ -1,0 +1,31 @@
+company:
+  name: 'YOUR COMPANY' # must be changed before the first run
+  description: 'What you sell and to whom, in 1–3 sentences.'
+  positioning: 'Why customers pick you.' # optional
+
+settings:
+  max_cost_usd: 1.00 # hard cap per run
+  alert_on: [] # optional keywords watched on every page
+  min_change_chars: 40 # ignore diffs smaller than this
+  allow_public_repo: false # leave false unless you're sure
+  models: # optional; defaults come from the engine
+    triage: ''
+    analysis: ''
+  notify:
+    github_issue: true # only works inside GitHub Actions
+    slack: false # needs SLACK_WEBHOOK_URL
+    discord: false # needs DISCORD_WEBHOOK_URL
+
+competitors:
+  - name: 'Example Competitor'
+    pages:
+      - type: pricing # pricing | changelog | homepage | careers | product | blog | other
+        url: 'https://example.com/pricing'
+        include: ['.pricing-table'] # optional: watch only these elements
+        alert_on: ['enterprise', 'free plan'] # optional: keywords that always count as material
+      - type: homepage
+        url: 'https://example.com'
+        ignore: ['.testimonial-carousel'] # optional CSS selectors to strip
+      - type: pricing
+        url: 'https://example.com/plans'
+        render: true # needs playwright; see README
