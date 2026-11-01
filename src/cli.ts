@@ -220,7 +220,7 @@ program
     const storage = new FilesystemStorage(opts.dataDir);
     if (!opts.rebuild) {
       const card = await storage.read(battlecardPath(slug));
-      console.log(card ?? `No battlecard for "${slug}" yet. Run "competitor-watch run" first.`);
+      console.log(card ?? `No battlecard for "${slug}" yet. Run "outflank run" first.`);
       return;
     }
     await guardOrExit(config);

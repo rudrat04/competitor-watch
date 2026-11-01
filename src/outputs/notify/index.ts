@@ -70,7 +70,7 @@ export async function notifyAll(opts: NotifyOptions): Promise<NotifyResult[]> {
   if (n.github_issue) {
     results.push(
       await createDigestIssue({
-        title: `Competitor Watch — ${opts.date}: ${summary.headline}`,
+        title: `Outflank — ${opts.date}: ${summary.headline}`,
         digest: opts.result.digest,
         digestUrl: opts.digestUrl,
         env,

@@ -1,6 +1,6 @@
-> **SAMPLE OUTPUT — not real data.** A weekly digest with one material and two minor changes. The companies (Acme Analytics, Northwind Metrics, Globex Insights) are fictional; this file shows the format Competitor Watch produces.
+> **SAMPLE OUTPUT — not real data.** A weekly digest with one material and two minor changes. The companies (Acme Analytics, Northwind Metrics, Globex Insights) are fictional; this file shows the format Outflank produces.
 
-# Competitor Watch — 2026-11-09
+# Outflank — 2026-11-09
 
 **1 material, 2 minor changes across 2 competitors**
 
@@ -10,7 +10,7 @@
 
 **Pro rose to $69/month, an Enterprise plan was added and the free plan was removed.**
 
-- Page: https://northwind.example/pricing · [change history](https://github.com/you/my-competitor-watch/commits/HEAD/data/snapshots/northwind-metrics/pricing.md)
+- Page: https://northwind.example/pricing · [change history](https://github.com/you/my-outflank/commits/HEAD/data/snapshots/northwind-metrics/pricing.md)
 - Keyword trigger: "free plan" removed
 - **What changed:** The Pro plan rose from $49 to $69 per month, and a new Enterprise plan with SSO and audit logs was added at custom pricing. The "Free plan" section was removed.
 - **Why it matters:** Likely a move upmarket: dropping the free tier and adding Enterprise suggests they are prioritising larger accounts (speculation, based on the plan changes only).
@@ -19,8 +19,8 @@
 
 ## Minor changes
 
-- **Northwind Metrics** (changelog): Added a Salesforce export integration. — [history](https://github.com/you/my-competitor-watch/commits/HEAD/data/snapshots/northwind-metrics/changelog.md)
-- **Globex Insights** (homepage): Headline changed from "Analytics for everyone" to "AI analytics for product teams". — [history](https://github.com/you/my-competitor-watch/commits/HEAD/data/snapshots/globex-insights/homepage.md)
+- **Northwind Metrics** (changelog): Added a Salesforce export integration. — [history](https://github.com/you/my-outflank/commits/HEAD/data/snapshots/northwind-metrics/changelog.md)
+- **Globex Insights** (homepage): Headline changed from "Analytics for everyone" to "AI analytics for product teams". — [history](https://github.com/you/my-outflank/commits/HEAD/data/snapshots/globex-insights/homepage.md)
 
 ## Needs attention
 

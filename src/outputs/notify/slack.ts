@@ -12,7 +12,7 @@ export function escapeSlack(text: string): string {
 }
 
 export function slackText(s: NotifySummary): string {
-  const lines = [`*Competitor Watch — ${s.date}*: ${escapeSlack(s.headline)}`];
+  const lines = [`*Outflank — ${s.date}*: ${escapeSlack(s.headline)}`];
   for (const item of s.items) lines.push(`• ${escapeSlack(item)}`);
   if (s.more > 0) lines.push(`• …and ${s.more} more`);
   lines.push(

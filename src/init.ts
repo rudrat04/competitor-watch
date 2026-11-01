@@ -49,7 +49,7 @@ export interface InitResult {
   skipped: string[];
 }
 
-/** `competitor-watch init`: create competitors.yaml and .env, never overwriting either. */
+/** `outflank init`: create competitors.yaml and .env, never overwriting either. */
 export function initProject(dir: string): InitResult {
   const result: InitResult = { created: [], skipped: [] };
   for (const [name, content] of [
@@ -70,8 +70,8 @@ export function initProject(dir: string): InitResult {
 export const NEXT_STEPS = `Next steps:
   1. Put your Anthropic API key in .env (https://console.anthropic.com).
   2. Edit competitors.yaml: your company, then 2-5 competitors and their page URLs.
-  3. npx @rudrat04/competitor-watch check          # confirms every page is reachable
-  4. npx @rudrat04/competitor-watch run --dry-run  # try it; writes nothing
-  5. npx @rudrat04/competitor-watch run            # writes ./data
+  3. npx @rudrat04/outflank check          # confirms every page is reachable
+  4. npx @rudrat04/outflank run --dry-run  # try it; writes nothing
+  5. npx @rudrat04/outflank run            # writes ./data
 
 Tip: run "git init" here to keep the history of every change.`;

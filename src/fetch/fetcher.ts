@@ -8,7 +8,7 @@ interface RobotsLike {
 const robotsParser = robotsParserModule as unknown as (url: string, txt: string) => RobotsLike;
 
 /** Product token matched against robots.txt `User-agent:` lines. */
-export const ROBOTS_TOKEN = 'CompetitorWatch';
+export const ROBOTS_TOKEN = 'Outflank';
 
 export class FetchError extends Error {
   constructor(message: string) {

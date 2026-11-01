@@ -10,7 +10,7 @@ describe('fetcher', () => {
     const { fetcher, calls } = testFetcher({ 'https://a.io/p': { body: '<p>hi</p>' } });
     await fetcher.getHtml('https://a.io/p');
     expect(calls[0]?.headers['User-Agent']).toBe(USER_AGENT);
-    expect(USER_AGENT).toMatch(/^CompetitorWatch\/\d/);
+    expect(USER_AGENT).toMatch(/^Outflank\/\d/);
   });
 
   it('retries 5xx with exponential backoff, then succeeds', async () => {
@@ -78,7 +78,7 @@ describe('fetcher', () => {
 describe('robots.txt', () => {
   it('blocks disallowed paths for our token and allows others', async () => {
     const { fetcher } = testFetcher(
-      robots('User-agent: CompetitorWatch\nDisallow: /private\n\nUser-agent: *\nAllow: /'),
+      robots('User-agent: Outflank\nDisallow: /private\n\nUser-agent: *\nAllow: /'),
     );
     expect((await fetcher.isAllowed('https://a.io/private/x')).allowed).toBe(false);
     expect((await fetcher.isAllowed('https://a.io/public')).allowed).toBe(true);

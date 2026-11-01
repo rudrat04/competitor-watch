@@ -9,7 +9,7 @@ export function discordContent(s: NotifySummary): string {
   const link = isUrl(s.digestUrl)
     ? `[Read the full digest](${s.digestUrl})`
     : `Digest: ${s.digestUrl}`;
-  const head = `**Competitor Watch — ${s.date}**: ${s.headline}`;
+  const head = `**Outflank — ${s.date}**: ${s.headline}`;
   const items = s.items.map((i) => `• ${i}`);
   if (s.more > 0) items.push(`• …and ${s.more} more`);
   // Drop items from the end until it fits; the headline and the link always survive.

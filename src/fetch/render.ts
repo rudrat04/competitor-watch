@@ -30,7 +30,7 @@ interface PlaywrightLike {
 
 /**
  * Default loader: Playwright next to the engine, else in the folder the CLI runs from. The
- * second matters for `npx @rudrat04/competitor-watch`, where the engine lives in npx's cache
+ * second matters for `npx @rudrat04/outflank`, where the engine lives in npx's cache
  * and a plain import would never see a Playwright installed in the user's project folder.
  */
 export async function importPlaywright(

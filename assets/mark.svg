@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="124" height="124" viewBox="0 0 124 124" role="img" aria-labelledby="t d"><title id="t">Outflank mark</title><desc id="d">Outflank mark: a coral arrow outflanking a rival block on a sunset badge.</desc><defs><linearGradient id="skyM" x1="0" y1="0" x2="0.35" y2="1"><stop offset="0.00" stop-color="#EAB4A8"/><stop offset="0.25" stop-color="#E7A7BE"/><stop offset="0.50" stop-color="#C6A3D6"/><stop offset="0.75" stop-color="#8FA9DA"/><stop offset="1.00" stop-color="#6C97D2"/></linearGradient><linearGradient id="skydM" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#EAB4A8"/><stop offset="0.6" stop-color="#C6A3D6"/><stop offset="1" stop-color="#8FA9DA"/></linearGradient><radialGradient id="glowM"><stop offset="0" stop-color="#fff" stop-opacity="0.55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient><radialGradient id="sunM" cx="0.4" cy="0.35"><stop offset="0" stop-color="#FFF1B8"/><stop offset="0.55" stop-color="#FFD5A0"/><stop offset="1" stop-color="#FF5233"/></radialGradient></defs><g transform="translate(2 2) scale(1.0)">
+  <rect x="10" y="10" width="100" height="100" rx="24" fill="#1A1523"/>
+  <rect x="4" y="4" width="100" height="100" rx="24" fill="url(#skydM)" stroke="#1A1523" stroke-width="3.5"/>
+  <ellipse cx="34" cy="26" rx="30" ry="14" fill="url(#glowM)"/>
+  <ellipse cx="82" cy="88" rx="22" ry="10" fill="url(#glowM)" opacity="0.7"/>
+  <rect x="24" y="44" width="34" height="34" rx="7" fill="#FFF6EE" stroke="#1A1523" stroke-width="3.5"/>
+  <path d="M18 92 C 56 100, 82 88, 82 62 L 82 40" fill="none" stroke="#1A1523" stroke-width="15" stroke-linecap="round"/>
+  <path d="M18 92 C 56 100, 82 88, 82 62 L 82 40" fill="none" stroke="#FF5233" stroke-width="8" stroke-linecap="round"/>
+  <path d="M68 42 L 82 16 L 96 42 Z" fill="#FF5233" stroke="#1A1523" stroke-width="3.5" stroke-linejoin="round"/>
+</g></svg>

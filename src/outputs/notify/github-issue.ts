@@ -1,7 +1,7 @@
 import { githubApiUrl } from '../../github/context.js';
 import { errorText, postJson, type NotifyResult } from './http.js';
 
-export const ISSUE_LABEL = 'competitor-watch';
+export const ISSUE_LABEL = 'outflank';
 /** GitHub rejects issue bodies over 65,536 characters. */
 const MAX_BODY = 60_000;
 
@@ -21,7 +21,7 @@ export function issueBody(digest: string, digestUrl: string): string {
 }
 
 /**
- * One issue per run, labeled `competitor-watch`, body = digest (PLAN.md §7.8). Only inside
+ * One issue per run, labeled `outflank`, body = digest (PLAN.md §7.8). Only inside
  * GitHub Actions. Never throws: issues disabled, missing permissions or API errors become a
  * "failed" result that the CLI prints as a warning.
  */
@@ -51,7 +51,7 @@ export async function createDigestIssue(opts: {
     const label = await postJson(
       opts.fetchImpl,
       `${base}/labels`,
-      { name: ISSUE_LABEL, color: '5319e7', description: 'Competitor Watch digests' },
+      { name: ISSUE_LABEL, color: '5319e7', description: 'Outflank digests' },
       headers,
     ).catch(() => null);
     await label?.body?.cancel();

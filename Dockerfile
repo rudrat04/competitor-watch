@@ -1,11 +1,11 @@
-# Competitor Watch — run the CLI against a mounted folder holding competitors.yaml and data/.
+# Outflank — run the CLI against a mounted folder holding competitors.yaml and data/.
 #
-#   docker build -t competitor-watch .
-#   docker run --rm --env-file .env -v "$PWD:/work" competitor-watch run
+#   docker build -t outflank .
+#   docker run --rm --env-file .env -v "$PWD:/work" outflank run
 #
 # Playwright (for pages with `render: true`) is not included by default, to keep the image
 # small. To include it:
-#   docker build --build-arg INSTALL_PLAYWRIGHT=true -t competitor-watch .
+#   docker build --build-arg INSTALL_PLAYWRIGHT=true -t outflank .
 
 # ---- build: compile TypeScript, then drop dev dependencies ----
 FROM node:20-slim AS build

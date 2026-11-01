@@ -1,4 +1,4 @@
-> **SAMPLE OUTPUT — not real data.** A battlecard after its first weekly update. The companies (Acme Analytics, Northwind Metrics, Globex Insights) are fictional; this file shows the format Competitor Watch produces.
+> **SAMPLE OUTPUT — not real data.** A battlecard after its first weekly update. The companies (Acme Analytics, Northwind Metrics, Globex Insights) are fictional; this file shows the format Outflank produces.
 
 # Northwind Metrics — Battlecard
 

@@ -210,7 +210,7 @@ describe('npm package contents', () => {
     const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as {
       bin: Record<string, string>;
     };
-    expect(pkg.bin['competitor-watch']).toBe('dist/cli.js');
+    expect(pkg.bin['outflank']).toBe('dist/cli.js');
     expect(readFileSync(join(root, 'dist/cli.js'), 'utf8').startsWith('#!/usr/bin/env node')).toBe(
       true,
     );
