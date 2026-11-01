@@ -1,0 +1,34 @@
+# Example only: "Rehearsely" is a fictional company. The competitors and their pages are real.
+company:
+  name: "Rehearsely"
+  description: >-
+    AI sales roleplay and AI coaching for enterprise sales teams in India, mainly in
+    BFSI (banks, insurers, NBFCs) and pharma. Reps practise realistic customer and doctor
+    conversations with AI personas in English, Hindi and Hinglish; managers get
+    AI coaching scorecards and certification.
+  positioning: >-
+    Built for Indian field and branch sales: vernacular roleplays, compliance-aware
+    scenarios for regulated industries, mobile-first for field reps, and INR pricing.
+
+settings:
+  max_cost_usd: 1.00
+  alert_on: ["free trial", "hindi", "bfsi", "pharma"]
+  min_change_chars: 40
+
+competitors:
+  - name: "Mindtickle"
+    pages:
+      - { type: product, url: "https://www.mindtickle.com/platform/ai-sales-role-play/" }
+      - { type: other, url: "https://www.mindtickle.com/industries/pharma/" }
+  - name: "Awarathon"
+    pages:
+      - { type: homepage, url: "https://www.awarathon.com/" }
+      - { type: product, url: "https://www.awarathon.com/ai-coaching/" }
+  - name: "Second Nature"
+    pages:
+      - { type: product, url: "https://secondnature.ai/product/" }
+      - { type: other, url: "https://secondnature.ai/financial-services/", include: [".elementor"] }
+  - name: "Hyperbound"
+    pages:
+      - { type: pricing, url: "https://www.hyperbound.ai/pricing", alert_on: ["enterprise", "per seat"] }
+      - { type: other, url: "https://www.hyperbound.ai/industries/banking-financial-advisors" }

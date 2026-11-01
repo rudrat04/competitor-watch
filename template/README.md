@@ -1,3 +1,5 @@
+<p align="center"><img src="https://raw.githubusercontent.com/rudrat04/outflank/main/assets/logo.svg" alt="Outflank" width="320"></p>
+
 # My Outflank
 
 This repo watches your competitors' public web pages every week, explains what changed and why it matters, and keeps a battlecard per competitor. It is powered by [Outflank](https://github.com/rudrat04/outflank), which is free, open source and self-hosted: it runs on your own GitHub Actions minutes with your own Anthropic API key.
